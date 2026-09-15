@@ -17,7 +17,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:
 
 .toolbar{position:sticky;top:0;z-index:100;background:var(--yellow);border-bottom:1.5px solid var(--ink);padding:14px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
 .toolbar .word{display:flex;align-items:center;}
-.toolbar .word img{display:block;height:26px;width:auto;}
+.toolbar .word img{display:block;height:44px;width:auto;}
 .toolbar-heading{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
 .toolbar .catalog-title{font-family:var(--font);font-weight:400;font-size:22px;white-space:nowrap;line-height:1.1;}
 .toolbar .catalog-title .sep{margin:0 6px;}
@@ -28,15 +28,22 @@ body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:
 .btn:hover{background:#1a1a1a;}
 .btn-outline{background:#fff;color:var(--ink);border:1px solid var(--ink);}
 
-.season-nav{position:sticky;top:53px;z-index:99;background:var(--paper-2);border-bottom:1px solid var(--rule);padding:10px 32px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
-.season-nav .label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-right:4px;}
-.season-nav a{font-size:12.5px;font-weight:600;padding:6px 14px;border-radius:20px;background:#fff;border:1px solid var(--rule);color:var(--ink);text-decoration:none;white-space:nowrap;}
-.season-nav a:hover{border-color:var(--ink);}
+.season-nav{position:sticky;top:74px;z-index:99;background:var(--ink);border-bottom:1.5px solid var(--ink);padding:10px 32px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.season-nav .label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;margin-right:4px;}
+.season-nav a{font-size:12.5px;font-weight:600;padding:6px 14px;border-radius:20px;background:#fff;border:1px solid #fff;color:var(--ink);text-decoration:none;white-space:nowrap;}
+.season-nav a:hover{background:var(--yellow);border-color:var(--yellow);}
 
 main{max-width:1080px;margin:0 auto;padding:0 32px 100px;}
 
 .section{margin-bottom:8px;}
-.section-title{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);border-bottom:1px solid var(--rule);padding-bottom:8px;margin:48px 0 20px;scroll-margin-top:112px;}
+.section-title{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);border-bottom:1px solid var(--rule);padding-bottom:8px;margin:48px 0 20px;scroll-margin-top:175px;}
+/* Imprint sections (831 Stories, LYX) get their own brand mark next to the
+   label, linking out to that imprint's own site — a little visual nod that
+   these aren't just Authors Equity categories. */
+.section-title.imprint-title{display:flex;align-items:center;gap:10px;}
+.imprint-logo-link{display:inline-flex;align-items:center;line-height:0;}
+.imprint-logo-link img{height:26px;width:auto;display:block;}
+.imprint-wordmark-link{font-family:var(--font);font-weight:700;font-size:20px;letter-spacing:0;text-transform:none;text-decoration:none;}
 .section-title:first-of-type{margin-top:20px;}
 .section-sub{font-size:12.5px;color:var(--ink-3);margin:-14px 0 20px;}
 .subgroup-title{font-size:14px;font-weight:700;color:var(--ink);margin:26px 0 12px;display:flex;align-items:baseline;gap:8px;}
@@ -139,7 +146,7 @@ main{max-width:1080px;margin:0 auto;padding:0 32px 100px;}
 <div class="toolbar">
   <div class="word"><img src="/assets/images/social-icon-yellow.webp" alt="Authors Equity" width="72" height="72"></div>
   <div class="toolbar-heading">
-    <div class="catalog-title">Catalog <span class="sep">&middot;</span> <span id="season-range"></span></div>
+    <div class="catalog-title">Authors Equity Catalog <span class="sep">&middot;</span> <span id="season-range"></span></div>
     <div class="gen" id="gen-note">Loading…</div>
   </div>
   <input type="text" id="search" placeholder="Search title or author…" autocomplete="off">
@@ -360,7 +367,7 @@ function storiesSectionHtml(titles) {
   const handledIds = new Set([...featured, ...comingSoon].map(t => t.id));
   const rest = titles.filter(t => !handledIds.has(t.id)).sort(byPubDate);
 
-  let html = `<div id="sec-831" class="section-title">831 Stories</div>
+  let html = `<div id="sec-831" class="section-title imprint-title"><a class="imprint-logo-link" href="https://831stories.com" target="_blank" rel="noopener" aria-label="831 Stories — visit 831stories.com"><img src="/assets/images/imprints/831-logo.png" alt="831 Stories"></a></div>
     <div class="section-sub">${featured.length} new for ${esc(seasonLabel)} &middot; ${titles.length} titles total</div>
     <div class="grid grid-featured">${featured.slice().sort(byPubDate).map(t => gridItemHtml(t, { badge: seasonLabel })).join('')}</div>`;
   if (comingSoon.length) {
@@ -375,7 +382,7 @@ function lyxSectionHtml(titles) {
   if (!titles.length) return '';
   const bySeries = groupBy(titles, t => t.series || t.author || 'Standalone');
   const order = [...bySeries.keys()].sort((a, b) => a.localeCompare(b));
-  let html = `<div id="sec-lyx" class="section-title">LYX</div><div class="section-sub">The New Standard in New Adult Romance &mdash; browse by series</div>`;
+  let html = `<div id="sec-lyx" class="section-title"><a href="https://lyxbooks.com" target="_blank" rel="noopener" style="color:inherit;">LYX</a></div><div class="section-sub">The New Standard in New Adult Romance &mdash; browse by series</div>`;
   order.forEach(series => {
     const items = bySeries.get(series).slice().sort((a, b) => {
       if (a.seriesPos && b.seriesPos) return (+a.seriesPos) - (+b.seriesPos);
