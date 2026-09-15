@@ -5,31 +5,37 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Authors Equity — Catalog</title>
 <style>
-:root{--ink:#1A1918;--ink-2:#5C5A58;--ink-3:#9C9A98;--paper:#FAFAF8;--paper-2:#F0EFEC;--rule:#E2E0DC;--red:#C8471B;--red-lt:#FBF0EC;--r:4px;--font:Georgia,'Times New Roman',serif;--sans:-apple-system,'Helvetica Neue',Arial,sans-serif;}
+/* Restyled to match authorsequity.com's brand (see /assets/site.css there):
+   brand yellow + Tiempos Fine serif headings + black, no red accent. Unlike
+   the marketing pages, this is a single long, dense listing (100+ titles),
+   so the yellow is used as a strong hero/chrome color rather than painting
+   the entire scroll — the actual listings stay on a light, readable surface. */
+@font-face{font-family:'Tiempos Fine';src:url('/assets/fonts/tiempos-fine-light.woff2') format('woff2');font-weight:300;font-display:swap;}
+:root{--ink:#1A1918;--ink-2:#5C5A58;--ink-3:#9C9A98;--yellow:#FFCF00;--paper:#FAFAF8;--paper-2:#F0EFEC;--rule:#E2E0DC;--r:4px;--font:'Tiempos Fine',Georgia,'Times New Roman',serif;--sans:Arial,Helvetica,sans-serif;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;}
 
-.toolbar{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid var(--rule);padding:14px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
-.toolbar .word{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
-.toolbar .word span{color:var(--red);}
-.toolbar .gen{font-size:12px;color:var(--ink-3);flex:1;}
-.toolbar input[type=text]{font:inherit;font-size:13px;padding:8px 11px;border:1px solid var(--rule);border-radius:var(--r);min-width:180px;}
-.btn{font:inherit;font-size:13px;font-weight:600;padding:9px 18px;border-radius:var(--r);border:none;background:var(--red);color:#fff;cursor:pointer;}
-.btn:hover{background:#a83815;}
-.btn-outline{background:#fff;color:var(--ink);border:1px solid var(--rule);}
+.toolbar{position:sticky;top:0;z-index:100;background:var(--yellow);border-bottom:1.5px solid var(--ink);padding:14px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.toolbar .word{display:flex;align-items:center;}
+.toolbar .word img{display:block;height:26px;width:auto;}
+.toolbar .gen{font-size:12px;color:var(--ink-2);flex:1;}
+.toolbar input[type=text]{font:inherit;font-size:13px;padding:8px 11px;border:1px solid var(--ink);border-radius:var(--r);min-width:180px;background:#fff;}
+.btn{font:inherit;font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:10px 18px;border-radius:var(--r);border:1px solid var(--ink);background:var(--ink);color:var(--yellow);cursor:pointer;}
+.btn:hover{background:#1a1a1a;}
+.btn-outline{background:#fff;color:var(--ink);border:1px solid var(--ink);}
 
 .season-nav{position:sticky;top:53px;z-index:99;background:var(--paper-2);border-bottom:1px solid var(--rule);padding:10px 32px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
 .season-nav .label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-right:4px;}
 .season-nav a{font-size:12.5px;font-weight:600;padding:6px 14px;border-radius:20px;background:#fff;border:1px solid var(--rule);color:var(--ink);text-decoration:none;white-space:nowrap;}
-.season-nav a:hover{border-color:var(--red);color:var(--red);}
+.season-nav a:hover{border-color:var(--ink);}
 
-main{max-width:1080px;margin:0 auto;padding:40px 32px 100px;}
-.cover-page{text-align:center;padding:70px 0 50px;border-bottom:2px solid var(--ink);margin-bottom:8px;}
-.cover-page h1{font-family:var(--font);font-size:52px;font-weight:700;letter-spacing:-.01em;}
-.cover-page .season{font-size:16px;color:var(--ink-2);margin-top:10px;letter-spacing:.05em;text-transform:uppercase;}
+main{max-width:1080px;margin:0 auto;padding:0 32px 100px;}
+.cover-page{text-align:center;padding:70px 32px 50px;margin:0 -32px 8px;background:var(--yellow);border-bottom:2px solid var(--ink);}
+.cover-page h1{font-family:var(--font);font-weight:300;font-size:56px;letter-spacing:-.01em;}
+.cover-page .season{font-size:16px;color:var(--ink);margin-top:10px;letter-spacing:.05em;text-transform:uppercase;}
 
 .section{margin-bottom:8px;}
-.section-title{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--red);border-bottom:1px solid var(--rule);padding-bottom:8px;margin:48px 0 20px;scroll-margin-top:112px;}
+.section-title{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);border-bottom:1px solid var(--rule);padding-bottom:8px;margin:48px 0 20px;scroll-margin-top:112px;}
 .section-title:first-of-type{margin-top:20px;}
 .section-sub{font-size:12.5px;color:var(--ink-3);margin:-14px 0 20px;}
 .subgroup-title{font-size:14px;font-weight:700;color:var(--ink);margin:26px 0 12px;display:flex;align-items:baseline;gap:8px;}
@@ -111,7 +117,7 @@ main{max-width:1080px;margin:0 auto;padding:40px 32px 100px;}
 .grid.grid-featured{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:22px;margin-bottom:28px;}
 .grid-featured .gi-title{font-size:14px;}
 .grid-featured .gi-author{font-size:12px;}
-.grid-featured .gi-badge{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--red);background:var(--red-lt);border-radius:10px;padding:2px 8px;margin-top:4px;}
+.grid-featured .gi-badge{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--yellow);background:var(--ink);border-radius:10px;padding:2px 8px;margin-top:4px;}
 
 .loading,.error{text-align:center;color:var(--ink-3);padding:80px 0;}
 .footer{max-width:1080px;margin:0 auto;padding:30px 32px 60px;border-top:1px solid var(--rule);font-size:11.5px;color:var(--ink-3);text-align:center;}
@@ -126,42 +132,15 @@ main{max-width:1080px;margin:0 auto;padding:40px 32px 100px;}
   .cover-page h1{font-size:34px;}
 }
 
-@media print{
-  .toolbar,.season-nav,.carousel-btn{display:none;}
-  body{font-size:11px;}
-  main{max-width:none;padding:0;}
-  .cover-page{padding:110px 0 50px;}
-
-  /* Current/next season: strictly one title per printed page. */
-  .full-title{page-break-after:always;break-after:page;border-bottom:none;padding:0;}
-  .section-title{page-break-before:always;break-before:page;margin-top:0;}
-  .section-title:first-of-type{page-break-before:avoid;break-before:avoid;}
-
-  /* Grids: keep each card whole, let them flow (no forced 1-per-page). */
-  .grid-item{break-inside:avoid;}
-  .grid.grid-compact{grid-template-columns:repeat(8,1fr);gap:8px;}
-  .grid.grid-compact .gi-title,.grid.grid-compact .gi-author{display:block;}
-
-  /* Carousels have no meaning on paper — render as a stacked list instead:
-     each item becomes a horizontal row (small cover + text), one per line. */
-  .carousel-track{display:block;overflow:visible;}
-  .carousel-item{display:flex;align-items:flex-start;gap:12px;width:100%;flex:none;margin-bottom:8px;break-inside:avoid;}
-  .carousel-item img,.carousel-item .no-cover{width:46px;aspect-ratio:2/3;flex-shrink:0;}
-  .carousel-item .ci-title{margin-top:0;}
-
-  a{color:inherit;text-decoration:none;}
-  @page{size:letter;margin:0.6in;}
-}
 </style>
 </head>
 <body>
-<div class="toolbar no-print">
-  <div class="word">AE <span>Catalog</span></div>
+<div class="toolbar">
+  <div class="word"><img src="/assets/images/logo-black.webp" alt="Authors Equity" width="150" height="113"></div>
   <div class="gen" id="gen-note">Loading…</div>
   <input type="text" id="search" placeholder="Search title or author…" autocomplete="off">
-  <button class="btn btn-outline" id="btn-print">Download PDF</button>
 </div>
-<div class="season-nav no-print" id="season-nav"><span class="label">Browse</span></div>
+<div class="season-nav" id="season-nav"><span class="label">Browse</span></div>
 <main id="root"><div class="loading">Loading catalog…</div></main>
 <div class="footer">Authors Equity &middot; General questions: info@authorsequity.com &middot; Bulk sales: bulksales@authorsequity.com &middot; Rights: craig@authorsequity.com</div>
 <script>
@@ -343,9 +322,9 @@ function carouselHtml(id, items, opts) {
   const narrow = opts && opts.narrow ? ' narrow' : '';
   return `
     <div class="carousel-wrap${narrow}">
-      <button type="button" class="carousel-btn prev no-print" data-target="${id}" aria-label="Scroll left">&#8249;</button>
+      <button type="button" class="carousel-btn prev" data-target="${id}" aria-label="Scroll left">&#8249;</button>
       <div class="carousel-track" id="${id}">${items.map(carouselItemHtml).join('')}</div>
-      <button type="button" class="carousel-btn next no-print" data-target="${id}" aria-label="Scroll right">&#8250;</button>
+      <button type="button" class="carousel-btn next" data-target="${id}" aria-label="Scroll right">&#8250;</button>
     </div>
   `;
 }
@@ -554,7 +533,6 @@ function applySearch() {
 }
 
 document.getElementById('search').addEventListener('input', applySearch);
-document.getElementById('btn-print').addEventListener('click', () => window.print());
 document.getElementById('root').addEventListener('click', (e) => {
   const btn = e.target.closest('.carousel-btn');
   if (!btn) return;
