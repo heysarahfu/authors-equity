@@ -42,8 +42,9 @@ main{max-width:1080px;margin:0 auto;padding:0 32px 100px;}
    these aren't just Authors Equity categories. */
 .section-title.imprint-title{display:flex;align-items:center;gap:10px;}
 .imprint-logo-link{display:inline-flex;align-items:center;line-height:0;}
-.imprint-logo-link img{height:26px;width:auto;display:block;}
-.imprint-wordmark-link{font-family:var(--font);font-weight:700;font-size:20px;letter-spacing:0;text-transform:none;text-decoration:none;}
+.imprint-logo-link img{width:auto;display:block;}
+.imprint-logo-link.i831 img{height:80px;}
+.imprint-logo-link.ilyx img{height:56px;}
 .section-title:first-of-type{margin-top:20px;}
 .section-sub{font-size:12.5px;color:var(--ink-3);margin:-14px 0 20px;}
 .subgroup-title{font-size:14px;font-weight:700;color:var(--ink);margin:26px 0 12px;display:flex;align-items:baseline;gap:8px;}
@@ -367,7 +368,7 @@ function storiesSectionHtml(titles) {
   const handledIds = new Set([...featured, ...comingSoon].map(t => t.id));
   const rest = titles.filter(t => !handledIds.has(t.id)).sort(byPubDate);
 
-  let html = `<div id="sec-831" class="section-title imprint-title"><a class="imprint-logo-link" href="https://831stories.com" target="_blank" rel="noopener" aria-label="831 Stories — visit 831stories.com"><img src="/assets/images/imprints/831-logo.png" alt="831 Stories"></a></div>
+  let html = `<div id="sec-831" class="section-title imprint-title"><a class="imprint-logo-link i831" href="https://831stories.com" target="_blank" rel="noopener" aria-label="831 Stories — visit 831stories.com"><img src="/assets/images/imprints/831-logo.png" alt="831 Stories"></a></div>
     <div class="section-sub">${featured.length} new for ${esc(seasonLabel)} &middot; ${titles.length} titles total</div>
     <div class="grid grid-featured">${featured.slice().sort(byPubDate).map(t => gridItemHtml(t, { badge: seasonLabel })).join('')}</div>`;
   if (comingSoon.length) {
@@ -382,7 +383,7 @@ function lyxSectionHtml(titles) {
   if (!titles.length) return '';
   const bySeries = groupBy(titles, t => t.series || t.author || 'Standalone');
   const order = [...bySeries.keys()].sort((a, b) => a.localeCompare(b));
-  let html = `<div id="sec-lyx" class="section-title"><a href="https://lyxbooks.com" target="_blank" rel="noopener" style="color:inherit;">LYX</a></div><div class="section-sub">The New Standard in New Adult Romance &mdash; browse by series</div>`;
+  let html = `<div id="sec-lyx" class="section-title imprint-title"><a class="imprint-logo-link ilyx" href="https://lyxbooks.com" target="_blank" rel="noopener" aria-label="LYX — visit lyxbooks.com"><img src="/assets/images/imprints/lyx-logo.png" alt="LYX"></a></div><div class="section-sub">The New Standard in New Adult Romance &mdash; browse by series</div>`;
   order.forEach(series => {
     const items = bySeries.get(series).slice().sort((a, b) => {
       if (a.seriesPos && b.seriesPos) return (+a.seriesPos) - (+b.seriesPos);
