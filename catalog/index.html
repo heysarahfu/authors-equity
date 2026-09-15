@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Authors Equity — Catalog</title>
+<style>
+:root{--ink:#1A1918;--ink-2:#5C5A58;--ink-3:#9C9A98;--paper:#FAFAF8;--paper-2:#F0EFEC;--rule:#E2E0DC;--red:#C8471B;--red-lt:#FBF0EC;--r:4px;--font:Georgia,'Times New Roman',serif;--sans:-apple-system,'Helvetica Neue',Arial,sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;}
+
+.toolbar{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid var(--rule);padding:14px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.toolbar .word{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+.toolbar .word span{color:var(--red);}
+.toolbar .gen{font-size:12px;color:var(--ink-3);flex:1;}
+.toolbar input[type=text]{font:inherit;font-size:13px;padding:8px 11px;border:1px solid var(--rule);border-radius:var(--r);min-width:180px;}
+.btn{font:inherit;font-size:13px;font-weight:600;padding:9px 18px;border-radius:var(--r);border:none;background:var(--red);color:#fff;cursor:pointer;}
+.btn:hover{background:#a83815;}
+.btn-outline{background:#fff;color:var(--ink);border:1px solid var(--rule);}
+
+.season-nav{position:sticky;top:53px;z-index:99;background:var(--paper-2);border-bottom:1px solid var(--rule);padding:10px 32px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.season-nav .label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-right:4px;}
+.season-nav a{font-size:12.5px;font-weight:600;padding:6px 14px;border-radius:20px;background:#fff;border:1px solid var(--rule);color:var(--ink);text-decoration:none;white-space:nowrap;}
+.season-nav a:hover{border-color:var(--red);color:var(--red);}
+
+main{max-width:1080px;margin:0 auto;padding:40px 32px 100px;}
+.cover-page{text-align:center;padding:70px 0 50px;border-bottom:2px solid var(--ink);margin-bottom:8px;}
+.cover-page h1{font-family:var(--font);font-size:52px;font-weight:700;letter-spacing:-.01em;}
+.cover-page .season{font-size:16px;color:var(--ink-2);margin-top:10px;letter-spacing:.05em;text-transform:uppercase;}
+
+.section{margin-bottom:8px;}
+.section-title{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--red);border-bottom:1px solid var(--rule);padding-bottom:8px;margin:48px 0 20px;scroll-margin-top:112px;}
+.section-title:first-of-type{margin-top:20px;}
+.section-sub{font-size:12.5px;color:var(--ink-3);margin:-14px 0 20px;}
+.subgroup-title{font-size:14px;font-weight:700;color:var(--ink);margin:26px 0 12px;display:flex;align-items:baseline;gap:8px;}
+.subgroup-title .sg-note{font-size:11.5px;font-weight:400;color:var(--ink-3);}
+
+/* ── One-per-page frontlist spread (current + next season only) ──
+   The cover FLOATS left rather than sitting in a flex row with the title —
+   that way the byline/title/subtitle and the photo+info-table row that
+   follows all start right where the previous one ends, regardless of the
+   cover's own height, instead of being held down to a shared row height.
+   Text/rows simply wrap around the cover until they clear its bottom (a
+   tall cover), then run full width — matches the print catalog's own
+   layout (authorsequity.com/catalog) rather than a generic sell-sheet. */
+.full-title{padding:28px 0;border-bottom:1px solid var(--rule);break-inside:avoid;overflow:hidden;}
+.full-title .cover{float:left;width:150px;margin:0 28px 14px 0;}
+.full-title .cover img,.full-title .cover .no-cover{width:100%;display:block;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.15);background:var(--paper-2);}
+/* No forced aspect-ratio here (unlike the grid/carousel cards) — this is a
+   single book on its own row, not a row of cards that need to line up, so
+   there's nothing to gain from a fixed box and it just adds letterboxing
+   for any cover that isn't exactly 2:3. Natural size looks cleaner. */
+.full-title .cover img{height:auto;}
+.full-title .cover .no-cover{aspect-ratio:2/3;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;color:var(--ink-3);padding:10px;}
+.full-title .byline{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);}
+.full-title h2{font-family:var(--font);font-size:30px;font-weight:700;letter-spacing:-.01em;margin-top:6px;}
+.full-title .subtitle{font-size:15px;color:var(--ink-2);font-style:italic;margin-top:4px;}
+
+.ft-meta{display:flex;gap:20px;margin-top:16px;}
+.ft-meta .ft-photo{width:150px;flex-shrink:0;}
+.ft-meta .ft-photo img,.ft-meta .ft-photo .no-cover{width:100%;height:100%;display:block;border-radius:3px;background:var(--paper-2);object-fit:cover;}
+.ft-meta .ft-photo .no-cover{display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;color:var(--ink-3);padding:8px;}
+/* Fixed width regardless of how much space is left next to the photo (or
+   the cover, once the float clears) — a 2-row table (just On Sale +
+   one edition) stretching to fill all remaining width looked stretched
+   and empty; a real width keeps it sized to its content instead. */
+.info-table{border:1.5px solid var(--ink);border-radius:4px;padding:2px 18px;font-size:12.5px;width:300px;max-width:100%;flex:none;}
+.info-table .it-row{display:flex;gap:14px;padding:7px 0;}
+.info-table .it-row+.it-row{border-top:1px solid var(--rule);}
+.info-table .it-label{width:80px;flex-shrink:0;color:var(--ink-3);}
+.info-table .it-value{color:var(--ink);font-weight:600;}
+
+.full-title .desc{font-size:13px;color:var(--ink);margin-top:20px;white-space:pre-line;}
+.full-title .about-label{font-size:13px;font-weight:700;color:var(--ink);margin-top:18px;}
+.full-title .bio{font-size:13px;color:var(--ink-2);margin-top:3px;white-space:pre-line;}
+
+/* ── Generic compact grid card (used by 831 + fallback) ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px;margin-bottom:20px;}
+.grid.grid-compact{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px;}
+.grid-item{break-inside:avoid;}
+.grid-item img,.grid-item .no-cover{width:100%;aspect-ratio:2/3;border-radius:3px;background:var(--paper-2);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+.grid-item img{object-fit:contain;}
+.grid-item .no-cover{display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;color:var(--ink-3);padding:8px;}
+.grid-item .gi-title{font-size:12px;font-weight:600;margin-top:6px;}
+.grid.grid-compact .gi-title{font-size:10.5px;}
+.grid-item .gi-author{font-size:11px;color:var(--ink-2);}
+.grid.grid-compact .gi-author{font-size:9.5px;}
+.grid-item .gi-meta{font-size:10.5px;color:var(--ink-3);margin-top:2px;}
+.grid.grid-compact .gi-meta{font-size:9px;}
+
+/* ── Horizontal carousel (LYX series, backlist-by-theme) ── */
+.carousel-wrap{position:relative;margin-bottom:8px;}
+/* LYX series are short (2-4 books) — at full page width they never overflow,
+   so the carousel never has anything to scroll to. Windowing it narrower
+   than the page forces a real "browse through the series" interaction
+   instead of a static row with two dead arrow buttons. */
+.carousel-wrap.narrow{max-width:400px;}
+.carousel-track{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:8px;scrollbar-width:thin;}
+.carousel-item{flex:0 0 128px;scroll-snap-align:start;}
+.carousel-item img,.carousel-item .no-cover{width:100%;aspect-ratio:2/3;border-radius:3px;background:var(--paper-2);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+.carousel-item img{object-fit:contain;}
+.carousel-item .no-cover{display:flex;align-items:center;justify-content:center;text-align:center;font-size:9.5px;color:var(--ink-3);padding:6px;}
+.carousel-item .ci-title{font-size:11.5px;font-weight:600;margin-top:6px;}
+.carousel-item .ci-meta{font-size:10px;color:var(--ink-3);margin-top:1px;}
+.carousel-btn{position:absolute;top:40%;transform:translateY(-50%);background:#fff;border:1px solid var(--rule);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--ink);z-index:5;box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.carousel-btn:disabled{opacity:.3;cursor:default;}
+.carousel-btn.prev{left:-14px;}
+.carousel-btn.next{right:-14px;}
+
+/* ── 831 featured (newest season) vs rest ── */
+.grid.grid-featured{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:22px;margin-bottom:28px;}
+.grid-featured .gi-title{font-size:14px;}
+.grid-featured .gi-author{font-size:12px;}
+.grid-featured .gi-badge{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--red);background:var(--red-lt);border-radius:10px;padding:2px 8px;margin-top:4px;}
+
+.loading,.error{text-align:center;color:var(--ink-3);padding:80px 0;}
+.footer{max-width:1080px;margin:0 auto;padding:30px 32px 60px;border-top:1px solid var(--rule);font-size:11.5px;color:var(--ink-3);text-align:center;}
+
+@media(max-width:640px){
+  .toolbar{padding:12px 16px;}
+  .season-nav{padding:8px 16px;}
+  main{padding:28px 16px 80px;}
+  .ft-meta{flex-direction:column;gap:14px;}
+  .full-title .cover{width:110px;}
+  .ft-meta .ft-photo{width:110px;height:110px;}
+  .cover-page h1{font-size:34px;}
+}
+
+@media print{
+  .toolbar,.season-nav,.carousel-btn{display:none;}
+  body{font-size:11px;}
+  main{max-width:none;padding:0;}
+  .cover-page{padding:110px 0 50px;}
+
+  /* Current/next season: strictly one title per printed page. */
+  .full-title{page-break-after:always;break-after:page;border-bottom:none;padding:0;}
+  .section-title{page-break-before:always;break-before:page;margin-top:0;}
+  .section-title:first-of-type{page-break-before:avoid;break-before:avoid;}
+
+  /* Grids: keep each card whole, let them flow (no forced 1-per-page). */
+  .grid-item{break-inside:avoid;}
+  .grid.grid-compact{grid-template-columns:repeat(8,1fr);gap:8px;}
+  .grid.grid-compact .gi-title,.grid.grid-compact .gi-author{display:block;}
+
+  /* Carousels have no meaning on paper — render as a stacked list instead:
+     each item becomes a horizontal row (small cover + text), one per line. */
+  .carousel-track{display:block;overflow:visible;}
+  .carousel-item{display:flex;align-items:flex-start;gap:12px;width:100%;flex:none;margin-bottom:8px;break-inside:avoid;}
+  .carousel-item img,.carousel-item .no-cover{width:46px;aspect-ratio:2/3;flex-shrink:0;}
+  .carousel-item .ci-title{margin-top:0;}
+
+  a{color:inherit;text-decoration:none;}
+  @page{size:letter;margin:0.6in;}
+}
+</style>
+</head>
+<body>
+<div class="toolbar no-print">
+  <div class="word">AE <span>Catalog</span></div>
+  <div class="gen" id="gen-note">Loading…</div>
+  <input type="text" id="search" placeholder="Search title or author…" autocomplete="off">
+  <button class="btn btn-outline" id="btn-print">Download PDF</button>
+</div>
+<div class="season-nav no-print" id="season-nav"><span class="label">Browse</span></div>
+<main id="root"><div class="loading">Loading catalog…</div></main>
+<div class="footer">Authors Equity &middot; General questions: info@authorsequity.com &middot; Bulk sales: bulksales@authorsequity.com &middot; Rights: craig@authorsequity.com</div>
+<script>
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatDate(iso) {
+  if (!iso) return 'TBD';
+  const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+function formatDateShort(iso) {
+  if (!iso) return 'TBD';
+  const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+const FORM_LABELS = { BB: 'Hardcover', BC: 'Paperback', AJ: 'Audiobook', EB: 'eBook' };
+const LYX = 'LYX', STORIES = '831 Stories';
+
+// ── Seasons ─────────────────────────────────────────────────────────
+// Three trade seasons/year: Spring (Jan-Apr), Summer (May-Aug), Fall
+// (Sep-Dec). `key` is a monotonic integer (year*3 + seasonIndex) so seasons
+// sort and step (+1 = "next season") without re-parsing labels.
+const SEASON_NAMES = ['Spring', 'Summer', 'Fall'];
+function seasonOf(pubDate) {
+  if (!pubDate) return null;
+  const d = new Date(pubDate + 'T00:00:00');
+  if (isNaN(d.getTime())) return null;
+  const idx = d.getMonth() <= 3 ? 0 : d.getMonth() <= 7 ? 1 : 2;
+  const y = d.getFullYear();
+  return { key: y * 3 + idx, label: SEASON_NAMES[idx] + ' ' + y };
+}
+function seasonFromKey(key) {
+  const idx = ((key % 3) + 3) % 3;
+  const y = (key - idx) / 3;
+  return { key, label: SEASON_NAMES[idx] + ' ' + y };
+}
+
+// ── BISAC -> catalog theme, matching the category set actually used in the
+// original Canva backlist pages (Fiction / Self-Help & Inspiration / Memoir /
+// Business & Tech / Politics, Current Events & History / Health, Wellness &
+// Family), plus two the original also carved out: Personal Finance & Wealth
+// (its own section there, not lumped into Business) and Games & Puzzles (the
+// original's parallel "New York Times Games" section). True crime (e.g.
+// Captain's Dinner) sits under Politics/History in the original, not its own
+// bucket — confirmed against authorsequity.com/catalog, not a guess.
+const THEME_MAP = {
+  FIC: 'Fiction',
+  BIO: 'Memoir', POE: 'Memoir',
+  SEL: 'Self-Help & Inspiration', PSY: 'Self-Help & Inspiration',
+  REL: 'Self-Help & Inspiration', SCI: 'Self-Help & Inspiration', PHI: 'Self-Help & Inspiration',
+  EDU: 'Self-Help & Inspiration', LCO: 'Self-Help & Inspiration',
+  BUS: 'Business & Tech', COM: 'Business & Tech', TEC: 'Business & Tech',
+  POL: 'Politics, Current Events & History', TRU: 'Politics, Current Events & History',
+  LAW: 'Politics, Current Events & History', HIS: 'Politics, Current Events & History',
+  SOC: 'Politics, Current Events & History',
+  HEA: 'Health, Wellness & Family', FAM: 'Health, Wellness & Family', MED: 'Health, Wellness & Family',
+  GAM: 'Games & Puzzles', OCC: 'Games & Puzzles',
+  ART: 'Self-Help & Inspiration', HUM: 'Self-Help & Inspiration', SPO: 'Health, Wellness & Family',
+  CKB: 'Health, Wellness & Family',
+};
+// BISAC's personal-finance/investing sub-ranges under the BUS prefix — the
+// original catalog gives these their own "Personal Finance & Wealth" section
+// rather than folding them into general Business & Tech (e.g. The Simple
+// Path to Wealth, Stay Calm, The Ladders of Wealth all land here).
+const FINANCE_BUS_PREFIXES = ['BUS050', 'BUS059', 'BUS060', 'BUS069'];
+
+function themeOf(t, titlesById) {
+  // Seth Godin's card decks (The Mentor Deck, and any future ones) get
+  // BISAC codes reflecting their subject matter (mentorship/business), which
+  // scatters them away from the other deck/puzzle products — group by
+  // product type instead for these.
+  if (/deck/i.test(t.title || '') && /godin/i.test(t.author || '')) return 'Games & Puzzles';
+
+  let codes = Array.isArray(t.bisacCodes) ? t.bisacCodes : [];
+  // A format variant (e.g. "Fade In PB") is sometimes its own title record
+  // with no ONIX marketing metadata of its own — borrow the base edition's
+  // BISAC codes for classification rather than dumping it in a catch-all.
+  if (!codes.length && titlesById) {
+    const base = titlesById[t.id.replace(/-(pb|paperback|signed-edition)$/, '')];
+    if (base && base.id !== t.id) codes = base.bisacCodes || [];
+  }
+  const first = codes[0] || '';
+  if (FINANCE_BUS_PREFIXES.some(p => first.toUpperCase().startsWith(p))) return 'Personal Finance & Wealth';
+  return THEME_MAP[first.slice(0, 3).toUpperCase()] || 'Business & Tech';
+}
+
+function editionsFor(t) {
+  const eds = Array.isArray(t.editions) && t.editions.length ? t.editions : (t.isbn13 ? [{ form: '', isbn13: t.isbn13 }] : []);
+  const seen = new Set();
+  return eds.filter(e => e.isbn13 && !seen.has(e.isbn13) && seen.add(e.isbn13))
+    .map(e => ({ label: FORM_LABELS[e.form] || e.form || 'Edition', isbn13: e.isbn13 }));
+}
+function byPubDate(a, b) {
+  if (!a.pubDate) return 1; if (!b.pubDate) return -1;
+  return new Date(a.pubDate) - new Date(b.pubDate);
+}
+function groupBy(list, fn) {
+  const map = new Map();
+  list.forEach(t => { const k = fn(t) || '(none)'; if (!map.has(k)) map.set(k, []); map.get(k).push(t); });
+  return map;
+}
+function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); }
+
+// A missing cover must still reserve its normal box (same aspect ratio,
+// same class hooks) — otherwise the item collapses to bare text and looks
+// broken next to its neighbors, especially inside a carousel row.
+function coverHtml(t) {
+  return t.coverUrl ? `<img src="${esc(t.coverUrl)}" alt="">` : `<div class="no-cover">${esc(t.title)}</div>`;
+}
+
+// Reference layout (authorsequity.com/catalog) only has room for one photo
+// slot next to the info table — a co-authored book just shows the first
+// author with a photo on file, same as the byline still lists everyone.
+function authorPhotoHtml(t) {
+  const photo = (Array.isArray(t.authorPhotos) ? t.authorPhotos : []).find(p => p && p.url);
+  return photo ? `<img src="${esc(photo.url)}" alt="${esc(photo.name || '')}">` : `<div class="no-cover">${esc((t.author || '').split(',')[0] || '')}</div>`;
+}
+
+function fullTitleHtml(t) {
+  const eds = editionsFor(t);
+  const hasPhoto = (Array.isArray(t.authorPhotos) ? t.authorPhotos : []).some(p => p && p.url);
+  const price = [t.priceUS ? 'US ' + t.priceUS : '', t.priceCAN ? 'CAN ' + t.priceCAN : ''].filter(Boolean).join(' &middot; ');
+
+  const infoRows = [
+    `<div class="it-row"><span class="it-label">On Sale</span><span class="it-value">${formatDate(t.pubDate)}</span></div>`,
+    price ? `<div class="it-row"><span class="it-label">Price</span><span class="it-value">${price}</span></div>` : '',
+    ...eds.map(e => `<div class="it-row"><span class="it-label">${esc(e.label)}</span><span class="it-value">ISBN ${esc(e.isbn13)}</span></div>`),
+    t.rights ? `<div class="it-row"><span class="it-label">Rights</span><span class="it-value">${esc(t.rights)}</span></div>` : '',
+  ].filter(Boolean).join('');
+
+  return `
+    <div class="full-title">
+      <div class="cover">${coverHtml(t)}</div>
+      ${t.author ? `<div class="byline">${esc(t.author)}</div>` : ''}
+      <h2>${esc(t.title)}</h2>
+      ${t.subtitle ? `<div class="subtitle">${esc(t.subtitle)}</div>` : ''}
+      <div class="ft-meta${hasPhoto ? '' : ' no-photo'}">
+        ${hasPhoto ? `<div class="ft-photo">${authorPhotoHtml(t)}</div>` : ''}
+        <div class="info-table">${infoRows}</div>
+      </div>
+      ${t.description ? `<div class="desc">${t.description}</div>` : ''}
+      ${t.authorBio ? `<div class="about-label">About the Author</div><div class="bio">${t.authorBio}</div>` : ''}
+    </div>
+  `;
+}
+
+function editionLinesHtml(t) {
+  const eds = editionsFor(t);
+  return `<div>${formatDateShort(t.pubDate)}</div>` + eds.map(e => `<div>${esc(e.label)} ${esc(e.isbn13)}</div>`).join('');
+}
+
+function gridItemHtml(t, opts) {
+  opts = opts || {};
+  return `
+    <div class="grid-item">
+      ${coverHtml(t)}
+      <div class="gi-title">${esc(t.title)}</div>
+      ${t.author ? `<div class="gi-author">${esc(t.author)}</div>` : ''}
+      <div class="gi-meta">${editionLinesHtml(t)}</div>
+      ${opts.badge ? `<div class="gi-badge">${esc(opts.badge)}</div>` : ''}
+    </div>
+  `;
+}
+
+function carouselItemHtml(t) {
+  return `
+    <div class="carousel-item">
+      ${coverHtml(t)}
+      <div class="ci-title">${esc(t.title)}</div>
+      <div class="ci-meta">${editionLinesHtml(t)}</div>
+    </div>
+  `;
+}
+
+function carouselHtml(id, items, opts) {
+  const narrow = opts && opts.narrow ? ' narrow' : '';
+  return `
+    <div class="carousel-wrap${narrow}">
+      <button type="button" class="carousel-btn prev no-print" data-target="${id}" aria-label="Scroll left">&#8249;</button>
+      <div class="carousel-track" id="${id}">${items.map(carouselItemHtml).join('')}</div>
+      <button type="button" class="carousel-btn next no-print" data-target="${id}" aria-label="Scroll right">&#8250;</button>
+    </div>
+  `;
+}
+
+// ── Section builders ────────────────────────────────────────────────
+function seasonSectionHtml(sectionId, heading, sub, titles) {
+  if (!titles.length) return '';
+  return `<div id="${sectionId}" class="section-title">${esc(heading)}</div>` +
+    (sub ? `<div class="section-sub">${esc(sub)}</div>` : '') +
+    titles.slice().sort(byPubDate).map(fullTitleHtml).join('');
+}
+
+function storiesSectionHtml(titles) {
+  if (!titles.length) return '';
+  const now = new Date();
+  const future = titles.filter(t => t.pubDate && new Date(t.pubDate + 'T00:00:00') >= now);
+  const pool = future.length ? future : titles;
+  const soonestKey = Math.min(...pool.map(t => (seasonOf(t.pubDate) || { key: Infinity }).key));
+  const featured = titles.filter(t => (seasonOf(t.pubDate) || {}).key === soonestKey);
+  const seasonLabel = seasonFromKey(soonestKey).label;
+
+  // The season right after the featured one gets its own "Coming Soon"
+  // sub-heading inside the compact grid, rather than blending anonymously
+  // into the rest of the backlist/future titles below it.
+  const comingSoonKey = soonestKey + 1;
+  const comingSoon = titles.filter(t => (seasonOf(t.pubDate) || {}).key === comingSoonKey);
+  const comingSoonLabel = seasonFromKey(comingSoonKey).label;
+
+  const handledIds = new Set([...featured, ...comingSoon].map(t => t.id));
+  const rest = titles.filter(t => !handledIds.has(t.id)).sort(byPubDate);
+
+  let html = `<div id="sec-831" class="section-title">831 Stories</div>
+    <div class="section-sub">${featured.length} new for ${esc(seasonLabel)} &middot; ${titles.length} titles total</div>
+    <div class="grid grid-featured">${featured.slice().sort(byPubDate).map(t => gridItemHtml(t, { badge: seasonLabel })).join('')}</div>`;
+  if (comingSoon.length) {
+    html += `<div class="subgroup-title">Coming Soon<span class="sg-note">${esc(comingSoonLabel)}</span></div>`;
+    html += `<div class="grid grid-compact">${comingSoon.slice().sort(byPubDate).map(t => gridItemHtml(t)).join('')}</div>`;
+  }
+  if (rest.length) html += `<div class="grid grid-compact">${rest.map(t => gridItemHtml(t)).join('')}</div>`;
+  return html;
+}
+
+function lyxSectionHtml(titles) {
+  if (!titles.length) return '';
+  const bySeries = groupBy(titles, t => t.series || t.author || 'Standalone');
+  const order = [...bySeries.keys()].sort((a, b) => a.localeCompare(b));
+  let html = `<div id="sec-lyx" class="section-title">LYX</div><div class="section-sub">The New Standard in New Adult Romance &mdash; browse by series</div>`;
+  order.forEach(series => {
+    const items = bySeries.get(series).slice().sort((a, b) => {
+      if (a.seriesPos && b.seriesPos) return (+a.seriesPos) - (+b.seriesPos);
+      return byPubDate(a, b);
+    });
+    const author = items[0]?.author || '';
+    html += `<div class="subgroup-title">${esc(series)}${author ? `<span class="sg-note">${esc(author)}</span>` : ''}</div>`;
+    html += carouselHtml('lyx-' + slug(series), items, { narrow: true });
+  });
+  return html;
+}
+
+// Shared by Backlist (strictly already-published) and Looking Ahead
+// (announced for a season beyond the current+next window) — same
+// browse-by-theme carousel treatment, different heading and id prefix so
+// each title only ever needs true-or-false pub-date logic once, in render().
+function themeCarouselSectionHtml(sectionId, idPrefix, heading, sub, titles, titlesById) {
+  if (!titles.length) return '';
+  const byTheme = groupBy(titles, t => themeOf(t, titlesById));
+  const order = [...byTheme.keys()].sort((a, b) => a.localeCompare(b));
+  let html = `<div id="${sectionId}" class="section-title">${esc(heading)}</div><div class="section-sub">${sub}</div>`;
+  order.forEach(theme => {
+    const items = byTheme.get(theme).slice().sort(byPubDate);
+    html += `<div class="subgroup-title">${esc(theme)}<span class="sg-note">${items.length} title${items.length === 1 ? '' : 's'}</span></div>`;
+    html += carouselHtml(idPrefix + '-' + slug(theme), items);
+  });
+  return html;
+}
+
+// A format variant published as its own title record (e.g. "Fade In PB",
+// "Captain's Dinner PB") shouldn't also show up as its own separate card —
+// fold its ISBN into the base edition's list instead. A signed edition
+// (e.g. "Future Relic Signed Edition") isn't a separate catalog entry at
+// all — drop it. Applied once, up front, before any section bucketing.
+function mergeSiblingRecords(titles) {
+  const byId = {};
+  titles.forEach(t => { byId[t.id] = t; });
+  const drop = new Set();
+  const merged = titles.map(t => ({ ...t }));
+  const mergedById = {};
+  merged.forEach(t => { mergedById[t.id] = t; });
+
+  titles.forEach(t => {
+    const m = t.id.match(/^(.+)-(pb|paperback|signed-edition)$/);
+    if (!m) return;
+    const base = mergedById[m[1]];
+    if (!base) return; // no sibling on file — leave it as its own card
+    if (m[2] === 'signed-edition') { drop.add(t.id); return; }
+    const baseRaw = Array.isArray(base.editions) && base.editions.length ? base.editions.slice() : (base.isbn13 ? [{ form: '', isbn13: base.isbn13 }] : []);
+    const pbRaw = Array.isArray(t.editions) && t.editions.length ? t.editions : (t.isbn13 ? [{ form: 'BC', isbn13: t.isbn13 }] : []);
+    pbRaw.forEach(e => { if (e.isbn13 && !baseRaw.some(be => be.isbn13 === e.isbn13)) baseRaw.push(e); });
+    base.editions = baseRaw;
+    drop.add(t.id);
+  });
+
+  return merged.filter(t => !drop.has(t.id));
+}
+
+let allTitles = [];
+let currentSeason, nextSeason;
+
+function render(rawTitles) {
+  const root = document.getElementById('root');
+  const titles = mergeSiblingRecords(rawTitles);
+  if (!titles.length) { root.innerHTML = '<div class="error">No titles match.</div>'; return; }
+
+  // At least one 831 Stories title ("Vacation Self") is on file with imprint
+  // wrongly set to "Authors Equity" — its subtitle ("An 831 Stories Romance")
+  // still tags it correctly, so check that too rather than trust imprint
+  // alone and let a mistagged record land in the wrong top-level section.
+  const isStories = t => t.imprint === STORIES || /831 stories/i.test(t.subtitle || '');
+  const lyxTitles = titles.filter(t => t.imprint === LYX);
+  const storiesTitles = titles.filter(isStories);
+  const mainTitles = titles.filter(t => t.imprint !== LYX && !isStories(t));
+
+  const current = mainTitles.filter(t => (seasonOf(t.pubDate) || {}).key === currentSeason.key);
+  const next = mainTitles.filter(t => (seasonOf(t.pubDate) || {}).key === nextSeason.key);
+  const handled = new Set([...current, ...next].map(t => t.id));
+  const leftover = mainTitles.filter(t => !handled.has(t.id));
+  // "Backlist" means already published — a title whose date got pushed out
+  // past the current+next window (e.g. re-scheduled after this catalog last
+  // categorized it) is still upcoming, not backlist, even though it isn't
+  // in the current+next spreads either. Give those their own section rather
+  // than mislabel them "previously published."
+  const today = new Date();
+  const isFuture = t => t.pubDate && new Date(t.pubDate + 'T00:00:00') >= today;
+  const backlist = leftover.filter(t => !isFuture(t));
+  const future = leftover.filter(isFuture);
+
+  let html = `<div class="cover-page"><h1>Catalog</h1><div class="season">${esc(currentSeason.label)} &ndash; ${esc(nextSeason.label)}</div></div>`;
+  html += seasonSectionHtml('sec-current', currentSeason.label, 'New & current this season', current);
+  html += seasonSectionHtml('sec-next', nextSeason.label, 'Coming next season', next);
+  html += storiesSectionHtml(storiesTitles);
+  html += lyxSectionHtml(lyxTitles);
+  const titlesById = {};
+  allTitles.forEach(t => { titlesById[t.id] = t; });
+  html += themeCarouselSectionHtml('sec-backlist', 'bl', 'Backlist', 'Previously published &mdash; browse by category', backlist, titlesById);
+  html += themeCarouselSectionHtml('sec-future', 'fu', 'Looking Ahead', 'Announced for later seasons &mdash; browse by category', future, titlesById);
+
+  root.innerHTML = html;
+
+  // Season-nav pills only ever need building once (on the unfiltered load),
+  // but harmless to rebuild — cheap and keeps it in sync if data changes.
+  const navPills = [];
+  if (current.length) navPills.push({ id: 'sec-current', label: currentSeason.label });
+  if (next.length) navPills.push({ id: 'sec-next', label: nextSeason.label });
+  if (storiesTitles.length) navPills.push({ id: 'sec-831', label: '831 Stories' });
+  if (lyxTitles.length) navPills.push({ id: 'sec-lyx', label: 'LYX' });
+  if (backlist.length) navPills.push({ id: 'sec-backlist', label: 'Backlist' });
+  if (future.length) navPills.push({ id: 'sec-future', label: 'Looking Ahead' });
+  const nav = document.getElementById('season-nav');
+  nav.innerHTML = '<span class="label">Browse</span>' + navPills.map(p => `<a href="#${p.id}">${esc(p.label)}</a>`).join('');
+
+  updateCarouselArrows();
+  alignAuthorPhotoHeights();
+}
+
+// The author photo and the info table sit side by side as a matched pair
+// (like the two boxes in the reference layout) — match the photo's height
+// to whatever the table actually rendered at, so their bottom edges align
+// instead of the photo (fixed width, natural or arbitrary height) either
+// falling short or overshooting a table whose row count varies by title
+// (multi-edition books get an extra ISBN row, price is sometimes absent).
+function alignAuthorPhotoHeights() {
+  document.querySelectorAll('.ft-meta:not(.no-photo)').forEach(row => {
+    const photoBox = row.querySelector('.ft-photo');
+    const table = row.querySelector('.info-table');
+    if (!photoBox || !table) return;
+    photoBox.style.height = Math.round(table.getBoundingClientRect().height) + 'px';
+  });
+}
+
+// A carousel with nothing to scroll to (series/theme small enough to fit
+// entirely) shouldn't show arrows that do nothing when clicked — that's
+// what read as "not working." Hide both, then re-show/disable individually
+// as the user scrolls.
+function updateCarouselArrows() {
+  document.querySelectorAll('.carousel-wrap').forEach(wrap => {
+    const track = wrap.querySelector('.carousel-track');
+    const [prev, next] = wrap.querySelectorAll('.carousel-btn');
+    const overflowing = track.scrollWidth > track.clientWidth + 1;
+    prev.style.display = overflowing ? '' : 'none';
+    next.style.display = overflowing ? '' : 'none';
+    if (!overflowing) return;
+    const sync = () => {
+      prev.disabled = track.scrollLeft <= 0;
+      next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
+    };
+    track.addEventListener('scroll', sync);
+    sync();
+  });
+}
+window.addEventListener('resize', () => { if (allTitles.length) { updateCarouselArrows(); alignAuthorPhotoHeights(); } });
+
+function applySearch() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  if (!q) { render(allTitles); return; }
+  render(allTitles.filter(t => ((t.title||'')+' '+(t.author||'')).toLowerCase().includes(q)));
+}
+
+document.getElementById('search').addEventListener('input', applySearch);
+document.getElementById('btn-print').addEventListener('click', () => window.print());
+document.getElementById('root').addEventListener('click', (e) => {
+  const btn = e.target.closest('.carousel-btn');
+  if (!btn) return;
+  const track = document.getElementById(btn.dataset.target);
+  if (!track) return;
+  track.scrollBy({ left: btn.classList.contains('prev') ? -320 : 320, behavior: 'smooth' });
+});
+
+async function load() {
+  try {
+    // Root-relative (not "/api/catalog") so this keeps working when the page
+    // is reverse-proxied at authorsequity.com/catalog/ instead of served at
+    // this site's own root — the API call then resolves to
+    // /catalog/api/catalog, matching wherever the page itself was loaded from.
+    const base = location.pathname.endsWith('/') ? location.pathname : location.pathname + '/';
+    const res = await fetch(base + 'api/catalog');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to load catalog');
+    allTitles = data.titles || [];
+    const today = seasonOf(new Date().toISOString().slice(0, 10));
+    currentSeason = today;
+    nextSeason = seasonFromKey(today.key + 1);
+    document.getElementById('gen-note').textContent = data.generatedAt
+      ? `${allTitles.length} titles · updated ${new Date(data.generatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+      : `${allTitles.length} titles`;
+    render(allTitles);
+  } catch (err) {
+    document.getElementById('root').innerHTML = `<div class="error">Couldn't load the catalog: ${esc(err.message || err)}</div>`;
+    document.getElementById('gen-note').textContent = 'Error loading';
+  }
+}
+load();
+</script>
+</body>
+</html>

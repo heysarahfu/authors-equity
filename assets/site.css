@@ -1,0 +1,146 @@
+/* Authors Equity marketing site — faithful rebuild of the Squarespace
+   original (see authorsequity.com, "Website and brand design by Milos
+   Covic"). Same brand yellow, same Tiempos Fine headings (self-hosted here
+   instead of Squarespace's asset host), same plain-Arial body/nav. One
+   shared stylesheet across every page rather than Squarespace's per-page
+   generated CSS, since there's no visual variation between pages to justify
+   duplicating it. */
+
+@font-face {
+  font-family: 'Tiempos Fine';
+  src: url('/assets/fonts/tiempos-fine-light.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+}
+
+:root {
+  --yellow: #FFCF00;
+  --ink: #000000;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 19.2px;
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Tiempos Fine', Georgia, serif;
+  font-weight: 300;
+  margin: 0;
+}
+
+a { color: inherit; }
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32px 48px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+header .logo img { display: block; height: 48px; width: auto; }
+header nav { display: flex; gap: 28px; flex-wrap: wrap; }
+header nav a { text-decoration: none; }
+header nav a:hover, header nav a.active { text-decoration: underline; }
+
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 48px 120px;
+}
+
+/* Approach / Principles-intro style: one big serif statement, sized down a
+   touch from Squarespace's fluid-engine scaling (which floats with viewport
+   width) to a fixed comfortable reading size instead. */
+.statement {
+  font-family: 'Tiempos Fine', Georgia, serif;
+  font-size: 32px;
+  line-height: 1.35;
+  font-weight: 300;
+}
+.statement a { text-decoration: underline; }
+
+h1.page-title {
+  font-size: 44px;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* Principles accordion */
+.accordion-item { border-top: 1px solid var(--ink); }
+.accordion-item:last-child { border-bottom: 1px solid var(--ink); }
+.accordion-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 22px 0;
+  font-family: 'Tiempos Fine', Georgia, serif;
+  font-size: 26px;
+  font-weight: 300;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+.accordion-trigger .sign { font-family: Arial, Helvetica, sans-serif; font-size: 22px; }
+.accordion-panel { max-height: 0; overflow: hidden; transition: max-height .25s ease; }
+.accordion-panel p { margin: 0 0 22px; font-size: 17px; max-width: 560px; }
+.accordion-item.open .accordion-panel { max-height: 300px; }
+
+/* Leadership list */
+.leadership-list { margin-top: 32px; }
+.leadership-list .person { padding: 4px 0; font-size: 19.2px; }
+.leadership-list .person b { font-weight: 700; }
+
+/* Contact page */
+.contact-block { margin-top: 8px; }
+.contact-block p { margin: 0 0 14px; }
+.contact-block a { text-decoration: underline; }
+.contact-block .note { margin-top: 28px; font-size: 14px; letter-spacing: .02em; }
+
+/* Home page */
+.hero { text-align: center; padding: 60px 24px 0; }
+.hero img { max-width: 640px; width: 100%; height: auto; margin: 0 auto; display: block; }
+.signup { text-align: center; margin-top: 60px; padding-bottom: 40px; }
+.signup p { font-weight: 700; font-size: 17px; margin-bottom: 14px; }
+.signup form { display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.signup input[type=email] {
+  font: inherit; font-size: 16px; padding: 14px 18px; border: 1px solid var(--ink);
+  background: #fff; min-width: 220px;
+}
+.signup button {
+  font: inherit; font-size: 13px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
+  padding: 14px 22px; background: var(--ink); color: var(--yellow); border: 1px solid var(--ink); cursor: pointer;
+}
+.signup button:hover { background: #1a1a1a; }
+
+/* Legal pages */
+.legal h2 { font-size: 22px; margin-top: 32px; margin-bottom: 8px; }
+.legal p { font-size: 16px; margin: 0 0 14px; }
+.legal .updated { font-weight: 700; margin-bottom: 24px; }
+
+footer {
+  text-align: center;
+  padding: 40px 24px 60px;
+  font-size: 14px;
+}
+footer .credit { margin-top: 10px; color: rgba(0,0,0,.55); }
+footer a { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  header { padding: 24px; }
+  header nav { gap: 16px; font-size: 15px; }
+  main { padding: 32px 24px 90px; }
+  .statement { font-size: 24px; }
+  h1.page-title { font-size: 34px; }
+  .accordion-trigger { font-size: 21px; }
+}
