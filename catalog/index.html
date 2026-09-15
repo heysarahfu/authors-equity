@@ -283,6 +283,8 @@ function fullTitleHtml(t) {
     `<div class="it-row"><span class="it-label">On Sale</span><span class="it-value">${formatDate(t.pubDate)}</span></div>`,
     price ? `<div class="it-row"><span class="it-label">Price</span><span class="it-value">${price}</span></div>` : '',
     ...eds.map(e => `<div class="it-row"><span class="it-label">${esc(e.label)}</span><span class="it-value">ISBN ${esc(e.isbn13)}</span></div>`),
+    t.dimensions ? `<div class="it-row"><span class="it-label">Size</span><span class="it-value">${esc(t.dimensions)}</span></div>` : '',
+    t.pageCount ? `<div class="it-row"><span class="it-label">Pages</span><span class="it-value">${esc(t.pageCount)}</span></div>` : '',
     t.rights ? `<div class="it-row"><span class="it-label">Rights</span><span class="it-value">${esc(t.rights)}</span></div>` : '',
   ].filter(Boolean).join('');
 
