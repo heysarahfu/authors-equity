@@ -122,12 +122,16 @@ main{max-width:1080px;margin:0 auto;padding:0 32px 100px;}
 a.carousel-item{display:block;color:inherit;text-decoration:none;}
 a.carousel-item:hover .ci-title{text-decoration:underline;}
 
-/* LYX series row: a compact info-table (On Sale/price/ISBN/etc., for the
-   series' first book) sits to the left of that series' carousel, echoing
-   the frontlist spread's cover+info-table pairing at a smaller scale. */
-.lyx-series-row{display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;}
-.lyx-series-row .info-table{flex:none;}
-.lyx-series-row .carousel-wrap{margin-bottom:0;}
+/* A compact info-table (price/ISBN/etc., dateless since it's standing in for
+   several books at once) sits to the left of a LYX series' carousel or the
+   831 Stories featured grid, echoing the frontlist spread's cover+info-table
+   pairing at a smaller scale. Wraps to stack on narrow/mobile widths since
+   the table can't shrink below its own content. */
+.info-row{display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;}
+.info-row .info-table{flex:none;}
+.info-row .carousel-wrap{margin-bottom:0;}
+.info-row .grid{flex:1;min-width:220px;}
+.series-desc{font-size:12.5px;color:var(--ink-2);max-width:700px;margin:-6px 0 14px;}
 .carousel-btn{position:absolute;top:40%;transform:translateY(-50%);background:#fff;border:1px solid var(--rule);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--ink);z-index:5;box-shadow:0 1px 4px rgba(0,0,0,.1);}
 .carousel-btn:disabled{opacity:.3;cursor:default;}
 .carousel-btn.prev{left:-14px;}
@@ -275,6 +279,50 @@ function lyxUrlFor(t) {
   return s ? `https://lyxbooks.com/books/p/${s}` : null;
 }
 
+// Series-level blurb + rights, keyed by the exact `series` string in the
+// feed data. ONIX has no series-level description field at all (its
+// <Collection> composite only ever carries the series name — see the
+// catalog.js feed proxy) and the per-book "rights" ONIX supplies isn't
+// necessarily the series' territory, so both are hand-entered here rather
+// than read off a title record. Hopefully a future feed delivery carries
+// this natively and this map goes away; a series with no entry here just
+// renders without a description, and falls back to its first book's own
+// ONIX rights.
+const SERIES_INFO = {
+  'Dunbridge Academy': {
+    description: 'In this series of interconnected standalones perfect for fans of Maxton Hall, characters fall into forbidden feelings, heart-pounding tension, and slow-burn romances. Featuring stunning stenciled edges and character art on the inside covers.',
+    rights: 'North America',
+  },
+  'New England School of Ballet': {
+    description: 'A deeply emotional romance series. Dancers at an elite academy in Boston navigate the world of ballet, and the messy journey of falling in love. Featuring stunning stenciled edges and eye-catching foiled covers.',
+    rights: 'Worldwide, excluding Europe but including the UK',
+  },
+  'Chances': {
+    description: 'From USA Today bestselling author Brittainy Cherry comes The Chances series—heart-wrenching romances about healing, second chances, and the transformative power of love. In these interconnected standalones, broken hearts find their way back to hope, proving that even the deepest scars can heal when love is given another chance.',
+    rights: 'Worldwide, excluding Europe but including the UK',
+  },
+  'Scorpio Season': {
+    description: "Maisie Bell's Scorpio Season series is a steamy sapphic romance set to the soundtrack of an all-women rock band on tour — where fake dating, one-night stands, and late nights in the recording studio make falling for your bandmate completely inevitable. Featuring sprayed edges and character art on the inside cover.",
+    rights: 'Worldwide, excluding Europe but including the UK',
+  },
+  'Hall Beck University': {
+    description: "From Wattpad sensation Selina Mae comes Hall Beck University. These standalone interconnected romances are set at an elite East Coast university following characters as they navigate chaotic college life, athletic dreams, and falling for the one person they shouldn't. Featuring gorgeous stenciled edges, art on the inside cover, and an exclusive bonus chapter for each installment.",
+    rights: 'USA/Canada/UK/AUS/NZ',
+  },
+  'Ashwood Anthology': {
+    description: "Perfect for readers of Lauren Asher and Elle Kennedy, the Ashwood Anthology is their next obsession. Selina Mae's latest series trades campus life for the cutthroat world of luxury fashion empires — where old money rivalries, impossible secrets, and the wrong Ashwood heir make falling in love the most dangerous thing you can do.",
+    rights: 'USA/Canada/UK/AUS/NZ',
+  },
+  'The Darlington Series': {
+    description: 'Welcome to The Darlington, London’s most famous five-star hotel—where marble floors, room service, and high society set the stage for stolen glances, secret encounters, and a scandal that changes everything. In this swoon-worthy romance series, three Darlington brothers navigate family secrets and fall for the women they never saw coming. Featuring stunning character art and sprayed edges.',
+    rights: 'Worldwide, excluding Europe but including the UK',
+  },
+  'Novel Haven': {
+    description: 'A romance series set in the competitive gaming world. Perfect for fans of the video game Tiny Bookshop and Two Can Play by Ali Hazelwood. Each book features a sticker sheet to design your own cozy bookstore under the front cover and gorgeous stenciled edges.',
+    rights: 'Worldwide, excluding Europe but including the UK',
+  },
+};
+
 // ── Seasons ─────────────────────────────────────────────────────────
 // Three trade seasons/year: Spring (Jan-Apr), Summer (May-Aug), Fall
 // (Sep-Dec). `key` is a monotonic integer (year*3 + seasonIndex) so seasons
@@ -375,12 +423,15 @@ function authorPhotoHtml(t) {
   return photo ? `<img src="${esc(photo.url)}" alt="${esc(photo.name || '')}">` : `<div class="no-cover">${esc((t.author || '').split(',')[0] || '')}</div>`;
 }
 
-function infoTableHtml(t) {
+function infoTableHtml(t, opts) {
   const eds = editionsFor(t);
   const price = [t.priceUS ? 'US ' + t.priceUS : '', t.priceCAN ? 'CAN ' + t.priceCAN : ''].filter(Boolean).join(' &middot; ');
 
   const infoRows = [
-    `<div class="it-row"><span class="it-label">On Sale</span><span class="it-value">${formatDate(t.pubDate)}</span></div>`,
+    // A LYX series box represents several books with different on-sale
+    // dates, so showing just the first book's date read as the whole
+    // series' date — the caller opts out of this row for that case.
+    (opts && opts.hideOnSale) ? '' : `<div class="it-row"><span class="it-label">On Sale</span><span class="it-value">${formatDate(t.pubDate)}</span></div>`,
     price ? `<div class="it-row"><span class="it-label">Price</span><span class="it-value">${price}</span></div>` : '',
     ...eds.map(e => `<div class="it-row"><span class="it-label">${esc(e.label)}</span><span class="it-value">ISBN ${esc(e.isbn13)}</span></div>`),
     t.dimensions ? `<div class="it-row"><span class="it-label">Size</span><span class="it-value">${esc(t.dimensions)}</span></div>` : '',
@@ -479,9 +530,17 @@ function storiesSectionHtml(titles) {
   const handledIds = new Set([...featured, ...comingSoon].map(t => t.id));
   const rest = titles.filter(t => !handledIds.has(t.id)).sort(byPubDate);
 
+  // Every 831 Stories title ships to the same spec (trim size, price,
+  // paperback-only format), so rather than pick one of several current-
+  // season books to represent the whole imprint, we anchor on Big Fan (the
+  // imprint's first release) — falling back to the most recent title if
+  // it's ever missing from the feed.
+  const sortedByDate = titles.slice().sort(byPubDate);
+  const specBook = titles.find(t => t.title === 'Big Fan') || sortedByDate[sortedByDate.length - 1];
+
   let html = `<div id="sec-831" class="section-title imprint-title"><a class="imprint-logo-link i831" href="https://831stories.com" target="_blank" rel="noopener" aria-label="831 Stories — visit 831stories.com"><img src="/assets/images/imprints/831-logo.png" alt="831 Stories"></a></div>
     <div class="section-sub">${featured.length} new for ${esc(seasonLabel)} &middot; ${titles.length} titles total</div>
-    <div class="grid grid-featured">${featured.slice().sort(byPubDate).map(t => gridItemHtml(t, { badge: seasonLabel })).join('')}</div>`;
+    <div class="info-row">${infoTableHtml(specBook, { hideOnSale: true })}<div class="grid grid-featured">${featured.slice().sort(byPubDate).map(t => gridItemHtml(t, { badge: seasonLabel })).join('')}</div></div>`;
   if (comingSoon.length) {
     html += `<div class="subgroup-title">Coming Soon<span class="sg-note">${esc(comingSoonLabel)}</span></div>`;
     html += `<div class="grid grid-compact">${comingSoon.slice().sort(byPubDate).map(t => gridItemHtml(t)).join('')}</div>`;
@@ -501,8 +560,14 @@ function lyxSectionHtml(titles) {
       return byPubDate(a, b);
     });
     const author = items[0]?.author || '';
-    html += `<div class="subgroup-title">${esc(series)}${author ? `<span class="sg-note">${esc(author)}</span>` : ''}</div>`;
-    html += `<div class="lyx-series-row">${infoTableHtml(items[0])}${carouselHtml('lyx-' + slug(series), items, { narrow: true })}</div>`;
+    const info = SERIES_INFO[series];
+    // The series' own rights (when we have one on file) supersede whatever
+    // ONIX has on the first book, which reflects that book's own rights deal
+    // and isn't reliably the same as the series' — see SERIES_INFO above.
+    const infoBook = info?.rights ? { ...items[0], rights: info.rights } : items[0];
+    html += `<div class="subgroup-title">${esc(series)}${author ? `<span class="sg-note">by ${esc(author)}</span>` : ''}</div>`;
+    if (info?.description) html += `<div class="series-desc">${esc(info.description)}</div>`;
+    html += `<div class="info-row">${infoTableHtml(infoBook, { hideOnSale: true })}${carouselHtml('lyx-' + slug(series), items, { narrow: true })}</div>`;
   });
   return html;
 }
