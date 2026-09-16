@@ -150,6 +150,7 @@ a.carousel-item:hover .ci-title{text-decoration:underline;}
    where the season-nav's own horizontal pill bar is the only way to browse. */
 .date-scrubber{display:none;}
 .footer{max-width:1080px;margin:0 auto;padding:30px 32px 60px;border-top:1px solid var(--rule);font-size:11.5px;color:var(--ink-3);text-align:center;}
+.footer a{color:inherit;text-decoration:underline;}
 
 @media(max-width:640px){
   .toolbar{padding:12px 16px;}
@@ -208,7 +209,7 @@ a.carousel-item:hover .ci-title{text-decoration:underline;}
 </head>
 <body>
 <div class="toolbar">
-  <div class="word"><img src="/assets/images/social-icon-yellow.webp" alt="Authors Equity" width="72" height="72"></div>
+  <a class="word" href="https://authorsequity.com" aria-label="Authors Equity home"><img src="/assets/images/social-icon-yellow.webp" alt="Authors Equity" width="72" height="72"></a>
   <div class="toolbar-heading">
     <div class="catalog-title">Authors Equity Catalog <span class="sep">&middot;</span> <span id="season-range"></span></div>
     <div class="gen" id="gen-note">Loading…</div>
@@ -221,7 +222,7 @@ a.carousel-item:hover .ci-title{text-decoration:underline;}
   <div class="ds-track"></div>
   <div class="ds-thumb" id="ds-thumb"><span class="ds-label" id="ds-label"></span><span class="ds-dot"></span></div>
 </div>
-<div class="footer">Authors Equity &middot; General questions: info@authorsequity.com &middot; Bulk sales: bulksales@authorsequity.com &middot; Rights: craig@authorsequity.com</div>
+<div class="footer"><a href="https://authorsequity.com">Authors Equity</a> &middot; General questions: info@authorsequity.com &middot; Bulk sales: bulksales@authorsequity.com &middot; Rights: craig@authorsequity.com</div>
 <script>
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
