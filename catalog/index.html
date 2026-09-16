@@ -143,6 +143,11 @@ main{max-width:1080px;margin:0 auto;padding:0 32px 100px;}
   main{padding:28px 16px 80px;}
   .toolbar .gen{display:none;}
 
+  /* The 831 Stories "featured" cards (new for the current season) need a
+     200px-minimum column on desktop, which only ever fits one across on a
+     phone — force 2 columns instead of leaving them stacked single-file. */
+  .grid.grid-featured{grid-template-columns:repeat(2,1fr);gap:14px;}
+
   .season-nav{padding:8px 16px;}
 
   /* Cover + author photo run 2-up above the title/subtitle/info-table block,
