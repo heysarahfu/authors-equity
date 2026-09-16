@@ -722,21 +722,20 @@ function alignAuthorPhotoHeights() {
 }
 
 // On desktop, size the floated cover so it spans exactly from the top of the
-// title (not the byline above it — floats don't affect a normal-flow block's
-// own vertical position, so the byline renders full-width above wherever the
-// float starts) down to the bottom of the photo/info-table row below it —
-// echoing a print layout's cover-anchored-to-its-copy-block look instead of
-// an arbitrary float height. Width (not height) is what we adjust, scaled
-// from the cover's own intrinsic aspect ratio, so it's never stretched or
+// byline (the author name — or the title itself, for the rare title with no
+// byline) down to the bottom of the photo/info-table row below it — echoing
+// a print layout's cover-anchored-to-its-copy-block look instead of an
+// arbitrary float height. Width (not height) is what we adjust, scaled from
+// the cover's own intrinsic aspect ratio, so it's never stretched or
 // letterboxed. Mobile drops covers into their own 2-up row (see media
 // query) where this pairing doesn't apply, so it's skipped there.
 function alignCoverHeights() {
   const mobile = window.innerWidth <= 640;
   document.querySelectorAll('.full-title').forEach(block => {
     const cover = block.querySelector(':scope > .cover');
-    const h2 = block.querySelector(':scope > h2');
+    const anchor = block.querySelector(':scope > .byline') || block.querySelector(':scope > h2');
     const ftMeta = block.querySelector(':scope > .ft-meta');
-    if (!cover || !h2 || !ftMeta) return;
+    if (!cover || !anchor || !ftMeta) return;
     if (mobile) { cover.style.width = ''; cover.style.marginTop = ''; return; }
 
     // Reset first so a width/margin set on a previous pass doesn't skew the
@@ -750,9 +749,9 @@ function alignCoverHeights() {
     // Measured off the cover's own (reset-to-zero) top rather than the
     // block's, so the block's padding/border isn't counted twice.
     const coverTop = cover.getBoundingClientRect().top;
-    const h2Top = h2.getBoundingClientRect().top;
-    const marginTop = Math.max(0, Math.round(h2Top - coverTop));
-    const targetHeight = Math.max(1, Math.round(ftMeta.getBoundingClientRect().bottom - h2Top));
+    const anchorTop = anchor.getBoundingClientRect().top;
+    const marginTop = Math.max(0, Math.round(anchorTop - coverTop));
+    const targetHeight = Math.max(1, Math.round(ftMeta.getBoundingClientRect().bottom - anchorTop));
 
     cover.style.marginTop = marginTop + 'px';
     cover.style.width = Math.round(targetHeight * ratio) + 'px';
