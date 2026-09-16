@@ -117,6 +117,17 @@ main{max-width:1080px;margin:0 auto;padding:0 32px 100px;}
 .carousel-item .no-cover{display:flex;align-items:center;justify-content:center;text-align:center;font-size:9.5px;color:var(--ink-3);padding:6px;}
 .carousel-item .ci-title{font-size:11.5px;font-weight:600;margin-top:6px;}
 .carousel-item .ci-meta{font-size:10px;color:var(--ink-3);margin-top:1px;}
+/* Linked LYX cards (out to lyxbooks.com) render as <a>, unlinked ones as
+   <div> — reset the anchor so it looks identical to the unlinked case. */
+a.carousel-item{display:block;color:inherit;text-decoration:none;}
+a.carousel-item:hover .ci-title{text-decoration:underline;}
+
+/* LYX series row: a compact info-table (On Sale/price/ISBN/etc., for the
+   series' first book) sits to the left of that series' carousel, echoing
+   the frontlist spread's cover+info-table pairing at a smaller scale. */
+.lyx-series-row{display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;}
+.lyx-series-row .info-table{flex:none;}
+.lyx-series-row .carousel-wrap{margin-bottom:0;}
 .carousel-btn{position:absolute;top:40%;transform:translateY(-50%);background:#fff;border:1px solid var(--rule);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--ink);z-index:5;box-shadow:0 1px 4px rgba(0,0,0,.1);}
 .carousel-btn:disabled{opacity:.3;cursor:default;}
 .carousel-btn.prev{left:-14px;}
@@ -226,6 +237,44 @@ function formatDateShort(iso) {
 const FORM_LABELS = { BB: 'Hardcover', BC: 'Paperback', AJ: 'Audiobook', EB: 'eBook' };
 const LYX = 'LYX', STORIES = '831 Stories';
 
+// Maps each LYX title's ISBN to its lyxbooks.com product-page slug, so
+// carousel cards can link straight out to the book's page on the imprint's
+// own site. Confirmed by hand against lyxbooks.com/books (2026-09) — that
+// site has no ISBN or catalog-id field of its own to join on, and a few
+// announced titles (e.g. Scorpio Rising, High Hopes, This Spark) don't have
+// a live page yet, so this is a manually-curated map rather than a formula,
+// and a title with no entry here just renders without a link.
+const LYX_BOOK_SLUGS = {
+  '9798893313154': 'anymore',
+  '9798893311075': 'anyone',
+  '9798893311327': 'anytime',
+  '9798893310832': 'anywhere',
+  '9798893311105': 'eleanorandgrey',
+  '9798893311686': 'ethanandgrace',
+  '9798893312515': 'guardyourheart',
+  '9798893311648': 'henryandkate',
+  '9798893311266': 'holdme',
+  '9798893311662': 'karlaandash',
+  '9798893311358': 'landonandshay',
+  '9798893310696': 'lessonsinfaking',
+  '9798893311631': 'lessonsinfalling',
+  '9798893311150': 'lessonsinforgiving',
+  '9798893311679': 'levelsoflove',
+  '9798893312379': 'loganandrose',
+  '9798893312324': 'matchoffate',
+  '9798893313093': 'moveon',
+  '9798893312270': 'ruledbyrivalry',
+  '9798893312348': 'scorpioseason',
+  '9798893312263': 'shinebright',
+  '9798893313031': 'soundofdreams',
+  '9798893311655': 'stayhere',
+  '9798893312300': 'sworntosecrecy',
+};
+function lyxUrlFor(t) {
+  const s = LYX_BOOK_SLUGS[t.isbn13];
+  return s ? `https://lyxbooks.com/books/p/${s}` : null;
+}
+
 // ── Seasons ─────────────────────────────────────────────────────────
 // Three trade seasons/year: Spring (Jan-Apr), Summer (May-Aug), Fall
 // (Sep-Dec). `key` is a monotonic integer (year*3 + seasonIndex) so seasons
@@ -326,9 +375,8 @@ function authorPhotoHtml(t) {
   return photo ? `<img src="${esc(photo.url)}" alt="${esc(photo.name || '')}">` : `<div class="no-cover">${esc((t.author || '').split(',')[0] || '')}</div>`;
 }
 
-function fullTitleHtml(t) {
+function infoTableHtml(t) {
   const eds = editionsFor(t);
-  const hasPhoto = (Array.isArray(t.authorPhotos) ? t.authorPhotos : []).some(p => p && p.url);
   const price = [t.priceUS ? 'US ' + t.priceUS : '', t.priceCAN ? 'CAN ' + t.priceCAN : ''].filter(Boolean).join(' &middot; ');
 
   const infoRows = [
@@ -340,6 +388,12 @@ function fullTitleHtml(t) {
     t.rights ? `<div class="it-row"><span class="it-label">Rights</span><span class="it-value">${esc(t.rights)}</span></div>` : '',
   ].filter(Boolean).join('');
 
+  return `<div class="info-table">${infoRows}</div>`;
+}
+
+function fullTitleHtml(t) {
+  const hasPhoto = (Array.isArray(t.authorPhotos) ? t.authorPhotos : []).some(p => p && p.url);
+
   return `
     <div class="full-title" data-pubdate="${esc(t.pubDate || '')}">
       <div class="cover">${coverHtml(t)}</div>
@@ -348,7 +402,7 @@ function fullTitleHtml(t) {
       ${t.subtitle ? `<div class="subtitle">${esc(t.subtitle)}</div>` : ''}
       <div class="ft-meta${hasPhoto ? '' : ' no-photo'}">
         ${hasPhoto ? `<div class="ft-photo">${authorPhotoHtml(t)}</div>` : ''}
-        <div class="info-table">${infoRows}</div>
+        ${infoTableHtml(t)}
       </div>
       ${t.description ? `<div class="desc">${t.description}</div>` : ''}
       ${t.authorBio ? `<div class="about-label">About the Author</div><div class="bio">${t.authorBio}</div>` : ''}
@@ -375,12 +429,15 @@ function gridItemHtml(t, opts) {
 }
 
 function carouselItemHtml(t) {
+  const url = t.imprint === LYX ? lyxUrlFor(t) : null;
+  const tag = url ? 'a' : 'div';
+  const linkAttrs = url ? ` href="${esc(url)}" target="_blank" rel="noopener"` : '';
   return `
-    <div class="carousel-item" data-pubdate="${esc(t.pubDate || '')}">
+    <${tag} class="carousel-item" data-pubdate="${esc(t.pubDate || '')}"${linkAttrs}>
       ${coverHtml(t)}
       <div class="ci-title">${esc(t.title)}</div>
       <div class="ci-meta">${editionLinesHtml(t)}</div>
-    </div>
+    </${tag}>
   `;
 }
 
@@ -445,7 +502,7 @@ function lyxSectionHtml(titles) {
     });
     const author = items[0]?.author || '';
     html += `<div class="subgroup-title">${esc(series)}${author ? `<span class="sg-note">${esc(author)}</span>` : ''}</div>`;
-    html += carouselHtml('lyx-' + slug(series), items, { narrow: true });
+    html += `<div class="lyx-series-row">${infoTableHtml(items[0])}${carouselHtml('lyx-' + slug(series), items, { narrow: true })}</div>`;
   });
   return html;
 }
