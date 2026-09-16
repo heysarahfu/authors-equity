@@ -611,6 +611,10 @@ function render(rawTitles) {
 
   updateCarouselArrows();
   alignAuthorPhotoHeights();
+  alignCoverHeights();
+  document.querySelectorAll('.full-title .cover img').forEach(img => {
+    if (!img.complete) img.addEventListener('load', alignCoverHeights, { once: true });
+  });
   setupScrollSpy();
   updateDateScrubber();
 }
@@ -717,6 +721,44 @@ function alignAuthorPhotoHeights() {
   });
 }
 
+// On desktop, size the floated cover so it spans exactly from the top of the
+// title (not the byline above it — floats don't affect a normal-flow block's
+// own vertical position, so the byline renders full-width above wherever the
+// float starts) down to the bottom of the photo/info-table row below it —
+// echoing a print layout's cover-anchored-to-its-copy-block look instead of
+// an arbitrary float height. Width (not height) is what we adjust, scaled
+// from the cover's own intrinsic aspect ratio, so it's never stretched or
+// letterboxed. Mobile drops covers into their own 2-up row (see media
+// query) where this pairing doesn't apply, so it's skipped there.
+function alignCoverHeights() {
+  const mobile = window.innerWidth <= 640;
+  document.querySelectorAll('.full-title').forEach(block => {
+    const cover = block.querySelector(':scope > .cover');
+    const h2 = block.querySelector(':scope > h2');
+    const ftMeta = block.querySelector(':scope > .ft-meta');
+    if (!cover || !h2 || !ftMeta) return;
+    if (mobile) { cover.style.width = ''; cover.style.marginTop = ''; return; }
+
+    // Reset first so a width/margin set on a previous pass doesn't skew the
+    // measurements we're about to take (it can shift how the subtitle wraps).
+    cover.style.width = '';
+    cover.style.marginTop = '';
+
+    const img = cover.querySelector('img');
+    const ratio = img && img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 2 / 3;
+
+    // Measured off the cover's own (reset-to-zero) top rather than the
+    // block's, so the block's padding/border isn't counted twice.
+    const coverTop = cover.getBoundingClientRect().top;
+    const h2Top = h2.getBoundingClientRect().top;
+    const marginTop = Math.max(0, Math.round(h2Top - coverTop));
+    const targetHeight = Math.max(1, Math.round(ftMeta.getBoundingClientRect().bottom - h2Top));
+
+    cover.style.marginTop = marginTop + 'px';
+    cover.style.width = Math.round(targetHeight * ratio) + 'px';
+  });
+}
+
 // A carousel with nothing to scroll to (series/theme small enough to fit
 // entirely) shouldn't show arrows that do nothing when clicked — that's
 // what read as "not working." Hide both, then re-show/disable individually
@@ -751,7 +793,7 @@ function syncToolbarHeight() {
   const navH = document.querySelector('.season-nav').getBoundingClientRect().height;
   document.documentElement.style.setProperty('--nav-h', Math.round(navH) + 'px');
 }
-window.addEventListener('resize', () => { syncToolbarHeight(); updateDateScrubber(); if (allTitles.length) { updateCarouselArrows(); alignAuthorPhotoHeights(); } });
+window.addEventListener('resize', () => { syncToolbarHeight(); updateDateScrubber(); if (allTitles.length) { updateCarouselArrows(); alignAuthorPhotoHeights(); alignCoverHeights(); } });
 
 function applySearch() {
   const q = document.getElementById('search').value.trim().toLowerCase();
