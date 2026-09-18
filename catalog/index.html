@@ -15,6 +15,17 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;}
 
+/* ── Site nav — same links as authorsequity.com's own header, so the
+   catalog reads as part of that site rather than a standalone tool. Sits
+   above .toolbar (which already carries its own small home icon) rather
+   than replacing it; not sticky, since it's site-wide chrome rather than a
+   catalog nav aid worth keeping on screen through the whole scroll. */
+.site-header{background:var(--yellow);border-bottom:1px solid rgba(0,0,0,.2);display:flex;align-items:center;justify-content:space-between;padding:14px 32px;gap:20px;flex-wrap:wrap;}
+.site-header .site-logo img{display:block;width:36px;height:36px;}
+.site-header .site-nav{display:flex;gap:20px;flex-wrap:wrap;}
+.site-header .site-nav a{color:var(--ink);text-decoration:none;font-size:13px;font-weight:700;letter-spacing:.02em;}
+.site-header .site-nav a:hover{text-decoration:underline;}
+
 .toolbar{position:sticky;top:0;z-index:100;background:var(--yellow);border-bottom:1.5px solid var(--ink);padding:14px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
 .toolbar .word{display:flex;align-items:center;}
 .toolbar .word img{display:block;height:44px;width:auto;}
@@ -143,6 +154,21 @@ a.carousel-item:hover .ci-title{text-decoration:underline;}
 .grid-featured .gi-author{font-size:12px;}
 .grid-featured .gi-badge{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--yellow);background:var(--ink);border-radius:10px;padding:2px 8px;margin-top:4px;}
 
+/* ── Per-title anchor links — lets anyone send a URL straight to one book.
+   A <button>, not an <a>, because a LYX carousel card is sometimes itself
+   an <a> linking out to lyxbooks.com (see carouselItemHtml) — nesting a
+   second link inside that would be invalid HTML. scroll-margin-top uses
+   the same --toolbar-h/--nav-h vars the sticky bars and date-scrubber
+   already sync in JS, so a linked title clears both regardless of how
+   tall the toolbar happens to be at the current viewport width. */
+.full-title,.grid-item,.carousel-item{scroll-margin-top:calc(var(--toolbar-h, 74px) + var(--nav-h, 56px) + 16px);}
+.anchor-link{display:inline-flex;align-items:center;margin-left:6px;color:var(--ink-3);opacity:.45;background:none;border:none;padding:0;cursor:pointer;font:inherit;transition:opacity .15s,color .15s;vertical-align:middle;}
+.anchor-link svg{display:block;width:13px;height:13px;}
+.anchor-link:hover,.anchor-link:focus{opacity:1;color:var(--ink);}
+.anchor-link.copied{opacity:1;color:var(--ink);}
+@keyframes anchor-flash{0%{box-shadow:0 0 0 5px var(--yellow);}100%{box-shadow:0 0 0 5px transparent;}}
+.anchor-highlight{animation:anchor-flash 1.8s ease-out;border-radius:4px;}
+
 .loading,.error{text-align:center;color:var(--ink-3);padding:80px 0;}
 
 /* A thin scroll-position/date scrubber down the right edge — mobile only
@@ -153,6 +179,8 @@ a.carousel-item:hover .ci-title{text-decoration:underline;}
 .footer a{color:inherit;text-decoration:underline;}
 
 @media(max-width:640px){
+  .site-header{padding:10px 16px;gap:10px;}
+  .site-header .site-nav{gap:10px;font-size:12px;}
   .toolbar{padding:12px 16px;}
   .toolbar .catalog-title{white-space:normal;font-size:17px;}
   .toolbar input[type=text]{flex-basis:100%;min-width:0;}
@@ -208,6 +236,16 @@ a.carousel-item:hover .ci-title{text-decoration:underline;}
 </style>
 </head>
 <body>
+<header class="site-header">
+  <a class="site-logo" href="https://authorsequity.com"><img src="/assets/images/social-icon-yellow.webp" alt="Authors Equity" width="72" height="72"></a>
+  <nav class="site-nav">
+    <a href="https://authorsequity.com/approach">Approach</a>
+    <a href="https://authorsequity.com/principles">Principles</a>
+    <a href="https://authorsequity.com/leadership">Leadership</a>
+    <a href="https://authorsequity.com/contact">Contact</a>
+    <a href="https://authorsequity.substack.com/" target="_blank" rel="noopener">Substack</a>
+  </nav>
+</header>
 <div class="toolbar">
   <a class="word" href="https://authorsequity.com" aria-label="Authors Equity home"><img src="/assets/images/social-icon-yellow.webp" alt="Authors Equity" width="72" height="72"></a>
   <div class="toolbar-heading">
@@ -408,6 +446,17 @@ function groupBy(list, fn) {
   return map;
 }
 function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); }
+function anchorIdFor(t) { return 't-' + slug(t.id); }
+// Small link-icon next to a title's name — click copies a direct URL to this
+// title and updates the address bar hash (so the browser's own back/forward
+// and scroll-to-fragment behavior does the rest). A <button>, never an <a>:
+// see the .anchor-link CSS comment for why. Always faintly visible (not
+// hover-only) so the affordance is discoverable on touch devices too.
+const ANCHOR_LINK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17H7a5 5 0 0 1 0-10h2"/><path d="M15 7h2a5 5 0 0 1 0 10h-2"/><line x1="8" y1="12" x2="16" y2="12"/></svg>';
+const ANCHOR_COPIED_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 12 9 17 20 6"/></svg>';
+function anchorLinkHtml(id) {
+  return `<button type="button" class="anchor-link" data-anchor-link="${id}" title="Copy link to this title" aria-label="Copy link to this title">${ANCHOR_LINK_ICON}</button>`;
+}
 
 // A missing cover must still reserve its normal box (same aspect ratio,
 // same class hooks) — otherwise the item collapses to bare text and looks
@@ -445,12 +494,13 @@ function infoTableHtml(t, opts) {
 
 function fullTitleHtml(t) {
   const hasPhoto = (Array.isArray(t.authorPhotos) ? t.authorPhotos : []).some(p => p && p.url);
+  const id = anchorIdFor(t);
 
   return `
-    <div class="full-title" data-pubdate="${esc(t.pubDate || '')}">
+    <div class="full-title" id="${id}" data-pubdate="${esc(t.pubDate || '')}">
       <div class="cover">${coverHtml(t)}</div>
       ${t.author ? `<div class="byline">${esc(t.author)}</div>` : ''}
-      <h2>${esc(t.title)}</h2>
+      <h2>${esc(t.title)}${anchorLinkHtml(id)}</h2>
       ${t.subtitle ? `<div class="subtitle">${esc(t.subtitle)}</div>` : ''}
       <div class="ft-meta${hasPhoto ? '' : ' no-photo'}">
         ${hasPhoto ? `<div class="ft-photo">${authorPhotoHtml(t)}</div>` : ''}
@@ -469,10 +519,11 @@ function editionLinesHtml(t) {
 
 function gridItemHtml(t, opts) {
   opts = opts || {};
+  const id = anchorIdFor(t);
   return `
-    <div class="grid-item" data-pubdate="${esc(t.pubDate || '')}">
+    <div class="grid-item" id="${id}" data-pubdate="${esc(t.pubDate || '')}">
       ${coverHtml(t)}
-      <div class="gi-title">${esc(t.title)}</div>
+      <div class="gi-title">${esc(t.title)}${anchorLinkHtml(id)}</div>
       ${t.author ? `<div class="gi-author">${esc(t.author)}</div>` : ''}
       <div class="gi-meta">${editionLinesHtml(t)}</div>
       ${opts.badge ? `<div class="gi-badge">${esc(opts.badge)}</div>` : ''}
@@ -484,10 +535,11 @@ function carouselItemHtml(t) {
   const url = t.imprint === LYX ? lyxUrlFor(t) : null;
   const tag = url ? 'a' : 'div';
   const linkAttrs = url ? ` href="${esc(url)}" target="_blank" rel="noopener"` : '';
+  const id = anchorIdFor(t);
   return `
-    <${tag} class="carousel-item" data-pubdate="${esc(t.pubDate || '')}"${linkAttrs}>
+    <${tag} class="carousel-item" id="${id}" data-pubdate="${esc(t.pubDate || '')}"${linkAttrs}>
       ${coverHtml(t)}
-      <div class="ci-title">${esc(t.title)}</div>
+      <div class="ci-title">${esc(t.title)}${anchorLinkHtml(id)}</div>
       <div class="ci-meta">${editionLinesHtml(t)}</div>
     </${tag}>
   `;
@@ -869,11 +921,44 @@ function applySearch() {
 document.getElementById('search').addEventListener('input', applySearch);
 document.getElementById('root').addEventListener('click', (e) => {
   const btn = e.target.closest('.carousel-btn');
-  if (!btn) return;
-  const track = document.getElementById(btn.dataset.target);
-  if (!track) return;
-  track.scrollBy({ left: btn.classList.contains('prev') ? -320 : 320, behavior: 'smooth' });
+  if (btn) {
+    const track = document.getElementById(btn.dataset.target);
+    if (track) track.scrollBy({ left: btn.classList.contains('prev') ? -320 : 320, behavior: 'smooth' });
+    return;
+  }
+  const link = e.target.closest('.anchor-link');
+  if (link) {
+    // preventDefault/stopPropagation matter here: a LYX card's anchor-link
+    // button can be nested inside the card's own <a> (out to lyxbooks.com)
+    // — without these, the click would bubble up and follow that link.
+    e.preventDefault();
+    e.stopPropagation();
+    const id = link.dataset.anchorLink;
+    const url = location.origin + location.pathname + '#' + id;
+    if (location.hash.slice(1) === id) flashAnchorTarget();
+    else location.hash = id; // native scroll + fires 'hashchange' -> flashAnchorTarget()
+    navigator.clipboard?.writeText(url).then(() => {
+      link.innerHTML = ANCHOR_COPIED_ICON;
+      link.classList.add('copied');
+      setTimeout(() => { link.innerHTML = ANCHOR_LINK_ICON; link.classList.remove('copied'); }, 1400);
+    }).catch(() => {});
+  }
 });
+
+// Briefly glow whichever title the current #hash points at — both when a
+// link is clicked on this page and when someone arrives with a #hash
+// already in the URL (handled separately in load(), since the target
+// title doesn't exist in the DOM until the catalog has finished loading).
+function flashAnchorTarget() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  const el = id && document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('anchor-highlight');
+  void el.offsetWidth; // restart the animation if the same title is flashed twice in a row
+  el.classList.add('anchor-highlight');
+  setTimeout(() => el.classList.remove('anchor-highlight'), 1800);
+}
+window.addEventListener('hashchange', flashAnchorTarget);
 
 async function load() {
   try {
@@ -894,6 +979,13 @@ async function load() {
       : `${allTitles.length} titles`;
     render(allTitles);
     syncToolbarHeight();
+    // The browser's own "scroll to #hash on load" happens before this
+    // content exists (it's rendered async, after the fetch above), so it
+    // never finds the target — do it ourselves once the DOM is actually there.
+    if (location.hash) {
+      const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+      if (target) { target.scrollIntoView({ block: 'center', inline: 'center' }); flashAnchorTarget(); }
+    }
   } catch (err) {
     document.getElementById('root').innerHTML = `<div class="error">Couldn't load the catalog: ${esc(err.message || err)}</div>`;
     document.getElementById('gen-note').textContent = 'Error loading';
