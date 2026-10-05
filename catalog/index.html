@@ -136,6 +136,18 @@ main{max-width:1080px;margin:0 auto;padding:0 32px 100px;}
 a.carousel-item{display:block;color:inherit;text-decoration:none;}
 a.carousel-item:hover .ci-title{text-decoration:underline;}
 
+/* ── Full title records (Backlist / Looking Ahead) ──
+   Collapsed by default and only rendered on first open — a backlist this
+   size as full records is a very long page, so the themed carousels stay the
+   way in and each card jumps to its own record in this chronological list. */
+.records{margin:28px 0 8px;border-top:1px solid var(--rule);}
+.records>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:8px;padding:16px 0;font-size:14px;font-weight:700;color:var(--ink);}
+.records>summary::-webkit-details-marker{display:none;}
+.records>summary::before{content:'\25B8';font-size:12px;color:var(--ink-3);transition:transform .15s;}
+.records[open]>summary::before{transform:rotate(90deg);}
+.records>summary:hover{text-decoration:underline;}
+.records>summary .sg-note{font-size:11.5px;font-weight:400;color:var(--ink-3);}
+
 /* A compact info-table (price/ISBN/etc., dateless since it's standing in for
    several books at once) sits to the left of a LYX series' carousel or the
    831 Stories featured grid, echoing the frontlist spread's cover+info-table
@@ -164,7 +176,7 @@ a.carousel-item:hover .ci-title{text-decoration:underline;}
    the same --toolbar-h/--nav-h vars the sticky bars and date-scrubber
    already sync in JS, so a linked title clears both regardless of how
    tall the toolbar happens to be at the current viewport width. */
-.full-title,.grid-item,.carousel-item{scroll-margin-top:calc(var(--toolbar-h, 74px) + var(--nav-h, 56px) + 16px);}
+.full-title,.grid-item,.carousel-item,.records{scroll-margin-top:calc(var(--toolbar-h, 74px) + var(--nav-h, 56px) + 16px);}
 .anchor-link{display:inline-flex;align-items:center;margin-left:6px;color:var(--ink-3);opacity:.45;background:none;border:none;padding:0;cursor:pointer;font:inherit;transition:opacity .15s,color .15s;vertical-align:middle;}
 .anchor-link svg{display:block;width:13px;height:13px;}
 .anchor-link:hover,.anchor-link:focus{opacity:1;color:var(--ink);}
@@ -533,7 +545,20 @@ function gridItemHtml(t, opts) {
   `;
 }
 
-function carouselItemHtml(t) {
+function carouselItemHtml(t, opts) {
+  // Backlist/Looking Ahead cards are an index into the full-record list
+  // below them: the record takes the title's anchor id (and its copy-link
+  // icon), the card just points at it.
+  if (opts && opts.recordLink) {
+    const rid = anchorIdFor(t);
+    return `
+    <a class="carousel-item" id="c-${rid}" href="#${rid}" data-record="${rid}" data-pubdate="${esc(t.pubDate || '')}">
+      ${coverHtml(t)}
+      <div class="ci-title">${esc(t.title)}</div>
+      <div class="ci-meta">${editionLinesHtml(t)}</div>
+    </a>
+  `;
+  }
   const url = t.imprint === LYX ? lyxUrlFor(t) : null;
   const tag = url ? 'a' : 'div';
   const linkAttrs = url ? ` href="${esc(url)}" target="_blank" rel="noopener"` : '';
@@ -552,7 +577,7 @@ function carouselHtml(id, items, opts) {
   return `
     <div class="carousel-wrap${narrow}">
       <button type="button" class="carousel-btn prev" data-target="${id}" aria-label="Scroll left">&#8249;</button>
-      <div class="carousel-track" id="${id}">${items.map(carouselItemHtml).join('')}</div>
+      <div class="carousel-track" id="${id}">${items.map(t => carouselItemHtml(t, opts)).join('')}</div>
       <button type="button" class="carousel-btn next" data-target="${id}" aria-label="Scroll right">&#8250;</button>
     </div>
   `;
@@ -639,8 +664,14 @@ function themeCarouselSectionHtml(sectionId, idPrefix, heading, sub, titles, tit
   order.forEach(theme => {
     const items = byTheme.get(theme).slice().sort(byPubDate);
     html += `<div class="subgroup-title">${esc(theme)}<span class="sg-note">${items.length} title${items.length === 1 ? '' : 's'}</span></div>`;
-    html += carouselHtml(idPrefix + '-' + slug(theme), items);
+    html += carouselHtml(idPrefix + '-' + slug(theme), items, { recordLink: true });
   });
+  // Same titles again as full records, oldest to newest, rendered lazily on
+  // first open (see ensureRecordsRendered).
+  const recId = 'rec-' + idPrefix;
+  recordBlocks[recId] = titles.slice().sort(byPubDate);
+  recordBlocks[recId].forEach(t => { recordOwner[anchorIdFor(t)] = recId; });
+  html += `<details class="records" id="${recId}"><summary>Full title records<span class="sg-note">${titles.length} title${titles.length === 1 ? '' : 's'} &middot; oldest to newest</span></summary><div class="records-body"></div></details>`;
   return html;
 }
 
@@ -675,9 +706,15 @@ function mergeSiblingRecords(titles) {
 
 let allTitles = [];
 let currentSeason, nextSeason;
+// Titles behind each collapsed "Full title records" block, and which block
+// owns which title anchor — rebuilt on every render().
+let recordBlocks = {};
+let recordOwner = {};
 
 function render(rawTitles) {
   const root = document.getElementById('root');
+  recordBlocks = {};
+  recordOwner = {};
   const titles = mergeSiblingRecords(rawTitles);
   if (!titles.length) { root.innerHTML = '<div class="error">No titles match.</div>'; return; }
 
@@ -739,6 +776,50 @@ function render(rawTitles) {
   updateDateScrubber();
 }
 
+// Fills a records block the first time it's opened, then re-lays-out the
+// full-title pairings (photo/table heights, cover width), which can only be
+// measured once the block is actually visible.
+function ensureRecordsRendered(details) {
+  if (!details.dataset.rendered) {
+    details.dataset.rendered = '1';
+    details.querySelector('.records-body').innerHTML = (recordBlocks[details.id] || []).map(fullTitleHtml).join('');
+  }
+  alignAuthorPhotoHeights();
+  alignCoverHeights();
+  details.querySelectorAll('.full-title .cover img').forEach(img => {
+    if (!img.complete) img.addEventListener('load', alignCoverHeights, { once: true });
+  });
+}
+
+// Returns the element for a title/anchor id, opening and filling its records
+// block first when the title only exists inside a collapsed one.
+function revealAnchor(id) {
+  const owner = recordOwner[id];
+  if (owner) {
+    const details = document.getElementById(owner);
+    if (details) { details.open = true; ensureRecordsRendered(details); }
+  }
+  return document.getElementById(id);
+}
+
+// Scrolls to (and flashes) a title, revealing it first if needed. Covers load
+// as the block fills and nudge the layout above the target, so settle once
+// more after they have.
+function goToAnchor(id, push) {
+  const el = revealAnchor(id);
+  if (!el) return;
+  if (push && location.hash.slice(1) !== id) history.pushState(null, '', '#' + id);
+  el.scrollIntoView({ block: 'start' });
+  flashAnchorTarget();
+  const imgs = [...el.parentElement.querySelectorAll('img')].filter(i => !i.complete);
+  if (imgs.length) {
+    Promise.race([
+      Promise.all(imgs.map(i => new Promise(r => { i.addEventListener('load', r, { once: true }); i.addEventListener('error', r, { once: true }); }))),
+      new Promise(r => setTimeout(r, 3000)),
+    ]).then(() => { if (decodeURIComponent(location.hash.slice(1)) === id) el.scrollIntoView({ block: 'start' }); });
+  }
+}
+
 // Highlights the season-nav link for whichever section is currently at the
 // top of the viewport, so the rail also works as a "where am I" indicator
 // while scrolling — not just a set of jump links. Re-run every render()
@@ -782,7 +863,8 @@ function updateDateScrubber() {
   thumb.style.top = Math.round(fraction * trackHeight) + 'px';
 
   const refY = (document.querySelector('.toolbar')?.getBoundingClientRect().bottom || 0) + 40;
-  const dated = [...document.querySelectorAll('[data-pubdate]')].filter(el => el.dataset.pubdate);
+  // Skip anything inside a collapsed records block (no layout box).
+  const dated = [...document.querySelectorAll('[data-pubdate]')].filter(el => el.dataset.pubdate && el.getClientRects().length);
   let current = dated[0];
   for (const el of dated) {
     if (el.getBoundingClientRect().top > refY) break;
@@ -836,7 +918,7 @@ function alignAuthorPhotoHeights() {
   document.querySelectorAll('.ft-meta:not(.no-photo)').forEach(row => {
     const photoBox = row.querySelector('.ft-photo');
     const table = row.querySelector('.info-table');
-    if (!photoBox || !table) return;
+    if (!photoBox || !table || !row.getClientRects().length) return;
     photoBox.style.height = mobile ? '' : Math.round(table.getBoundingClientRect().height) + 'px';
   });
 }
@@ -855,7 +937,7 @@ function alignCoverHeights() {
     const cover = block.querySelector(':scope > .cover');
     const anchor = block.querySelector(':scope > .byline') || block.querySelector(':scope > h2');
     const ftMeta = block.querySelector(':scope > .ft-meta');
-    if (!cover || !anchor || !ftMeta) return;
+    if (!cover || !anchor || !ftMeta || !block.getClientRects().length) return;
     if (mobile) { cover.style.width = ''; cover.style.marginTop = ''; return; }
 
     // Reset first so a width/margin set on a previous pass doesn't skew the
@@ -921,11 +1003,20 @@ function applySearch() {
 }
 
 document.getElementById('search').addEventListener('input', applySearch);
+document.getElementById('root').addEventListener('toggle', (e) => {
+  if (e.target.matches('details.records') && e.target.open) ensureRecordsRendered(e.target);
+}, true);
 document.getElementById('root').addEventListener('click', (e) => {
   const btn = e.target.closest('.carousel-btn');
   if (btn) {
     const track = document.getElementById(btn.dataset.target);
     if (track) track.scrollBy({ left: btn.classList.contains('prev') ? -320 : 320, behavior: 'smooth' });
+    return;
+  }
+  const recLink = e.target.closest('a.carousel-item[data-record]');
+  if (recLink) {
+    e.preventDefault();
+    goToAnchor(recLink.dataset.record, true);
     return;
   }
   const link = e.target.closest('.anchor-link');
@@ -960,7 +1051,14 @@ function flashAnchorTarget() {
   el.classList.add('anchor-highlight');
   setTimeout(() => el.classList.remove('anchor-highlight'), 1800);
 }
-window.addEventListener('hashchange', flashAnchorTarget);
+// A hash that points into a collapsed records block (back/forward, or an
+// edited URL) needs it opened first; anything already in the DOM keeps the
+// browser's native scroll.
+window.addEventListener('hashchange', () => {
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (recordOwner[id] && !document.getElementById(id)) goToAnchor(id, false);
+  else flashAnchorTarget();
+});
 
 async function load() {
   try {
@@ -985,8 +1083,12 @@ async function load() {
     // content exists (it's rendered async, after the fetch above), so it
     // never finds the target — do it ourselves once the DOM is actually there.
     if (location.hash) {
-      const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-      if (target) { target.scrollIntoView({ block: 'center', inline: 'center' }); flashAnchorTarget(); }
+      const hashId = decodeURIComponent(location.hash.slice(1));
+      if (recordOwner[hashId]) goToAnchor(hashId, false);
+      else {
+        const target = document.getElementById(hashId);
+        if (target) { target.scrollIntoView({ block: 'center', inline: 'center' }); flashAnchorTarget(); }
+      }
     }
   } catch (err) {
     document.getElementById('root').innerHTML = `<div class="error">Couldn't load the catalog: ${esc(err.message || err)}</div>`;
