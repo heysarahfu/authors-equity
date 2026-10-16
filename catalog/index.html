@@ -377,7 +377,7 @@ const SERIES_INFO = {
 };
 
 // ── Seasons ─────────────────────────────────────────────────────────
-// Three trade seasons/year: Spring (Jan-Apr), Summer (May-Aug), Fall
+// Three trade seasons/year: Spring (Jan-May), Summer (Jun-Aug), Fall
 // (Sep-Dec). `key` is a monotonic integer (year*3 + seasonIndex) so seasons
 // sort and step (+1 = "next season") without re-parsing labels.
 const SEASON_NAMES = ['Spring', 'Summer', 'Fall'];
@@ -385,7 +385,7 @@ function seasonOf(pubDate) {
   if (!pubDate) return null;
   const d = new Date(pubDate + 'T00:00:00');
   if (isNaN(d.getTime())) return null;
-  const idx = d.getMonth() <= 3 ? 0 : d.getMonth() <= 7 ? 1 : 2;
+  const idx = d.getMonth() <= 4 ? 0 : d.getMonth() <= 7 ? 1 : 2;
   const y = d.getFullYear();
   return { key: y * 3 + idx, label: SEASON_NAMES[idx] + ' ' + y };
 }
@@ -514,7 +514,7 @@ function fullTitleHtml(t) {
     <div class="full-title" id="${id}" data-pubdate="${esc(t.pubDate || '')}">
       <div class="cover">${coverHtml(t)}</div>
       ${t.author ? `<div class="byline">${esc(t.author)}</div>` : ''}
-      <h2>${esc(t.title)}${anchorLinkHtml(id)}</h2>
+      <h2>${esc(displayTitle(t))}${anchorLinkHtml(id)}</h2>
       ${t.subtitle ? `<div class="subtitle">${esc(t.subtitle)}</div>` : ''}
       <div class="ft-meta${hasPhoto ? '' : ' no-photo'}">
         ${hasPhoto ? `<div class="ft-photo">${authorPhotoHtml(t)}</div>` : ''}
@@ -537,7 +537,7 @@ function gridItemHtml(t, opts) {
   return `
     <div class="grid-item" id="${id}" data-pubdate="${esc(t.pubDate || '')}">
       ${coverHtml(t)}
-      <div class="gi-title">${esc(t.title)}${anchorLinkHtml(id)}</div>
+      <div class="gi-title">${esc(displayTitle(t))}${anchorLinkHtml(id)}</div>
       ${t.author ? `<div class="gi-author">${esc(t.author)}</div>` : ''}
       <div class="gi-meta">${editionLinesHtml(t)}</div>
       ${opts.badge ? `<div class="gi-badge">${esc(opts.badge)}</div>` : ''}
@@ -554,7 +554,7 @@ function carouselItemHtml(t, opts) {
     return `
     <a class="carousel-item" id="c-${rid}" href="#${rid}" data-record="${rid}" data-pubdate="${esc(t.pubDate || '')}">
       ${coverHtml(t)}
-      <div class="ci-title">${esc(t.title)}</div>
+      <div class="ci-title">${esc(displayTitle(t))}</div>
       <div class="ci-meta">${editionLinesHtml(t)}</div>
     </a>
   `;
@@ -566,7 +566,7 @@ function carouselItemHtml(t, opts) {
   return `
     <${tag} class="carousel-item" id="${id}" data-pubdate="${esc(t.pubDate || '')}"${linkAttrs}>
       ${coverHtml(t)}
-      <div class="ci-title">${esc(t.title)}${anchorLinkHtml(id)}</div>
+      <div class="ci-title">${esc(displayTitle(t))}${anchorLinkHtml(id)}</div>
       <div class="ci-meta">${editionLinesHtml(t)}</div>
     </${tag}>
   `;
@@ -681,19 +681,32 @@ function themeCarouselSectionHtml(sectionId, idPrefix, heading, sub, titles, tit
 // (e.g. "Future Relic Signed Edition") isn't a separate catalog entry at
 // all — drop it. Applied once, up front, before any section bucketing.
 function mergeSiblingRecords(titles) {
-  const byId = {};
-  titles.forEach(t => { byId[t.id] = t; });
-  const drop = new Set();
   const merged = titles.map(t => ({ ...t }));
   const mergedById = {};
   merged.forEach(t => { mergedById[t.id] = t; });
+  const drop = new Set();
+  // Fields a PB card borrows from its base when it has none of its own
+  // (the feed carries marketing copy on the base record only).
+  const BORROW = ['description', 'shortDescription', 'authorBio', 'bisacCodes', 'priceUS', 'priceCAN', 'rights', 'authorPhotos', 'imprint', 'subtitle'];
 
-  titles.forEach(t => {
+  merged.forEach(t => {
     const m = t.id.match(/^(.+)-(pb|paperback|signed-edition)$/);
     if (!m) return;
     const base = mergedById[m[1]];
     if (!base) return; // no sibling on file — leave it as its own card
     if (m[2] === 'signed-edition') { drop.add(t.id); return; }
+    // A paperback that lands in a DIFFERENT season than its hardcover is a
+    // launch of its own: keep it as its own card in its own season, labeled
+    // "Paperback". Same season (or no date to compare) folds into one entry.
+    const sb = seasonOf(base.pubDate), st = seasonOf(t.pubDate);
+    if (sb && st && sb.key !== st.key) {
+      t.variantLabel = 'Paperback';
+      BORROW.forEach(f => {
+        const v = t[f];
+        if ((Array.isArray(v) ? !v.length : !v) && base[f]) t[f] = base[f];
+      });
+      return;
+    }
     const baseRaw = Array.isArray(base.editions) && base.editions.length ? base.editions.slice() : (base.isbn13 ? [{ form: '', isbn13: base.isbn13 }] : []);
     const pbRaw = Array.isArray(t.editions) && t.editions.length ? t.editions : (t.isbn13 ? [{ form: 'BC', isbn13: t.isbn13 }] : []);
     pbRaw.forEach(e => { if (e.isbn13 && !baseRaw.some(be => be.isbn13 === e.isbn13)) baseRaw.push(e); });
@@ -702,6 +715,13 @@ function mergeSiblingRecords(titles) {
   });
 
   return merged.filter(t => !drop.has(t.id));
+}
+
+// Name shown for a card: a split-out paperback reads "Captain's Dinner
+// (Paperback)" rather than the internal "Captain's Dinner PB".
+function displayTitle(t) {
+  if (!t.variantLabel) return t.title;
+  return String(t.title || '').replace(/\s+(PB|Paperback)$/i, '') + ' (' + t.variantLabel + ')';
 }
 
 let allTitles = [];
