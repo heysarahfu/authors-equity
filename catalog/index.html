@@ -266,7 +266,7 @@ a.carousel-item:hover .ci-title{text-decoration:underline;}
     <div class="catalog-title">Authors Equity Catalog <span class="sep">&middot;</span> <span id="season-range"></span></div>
     <div class="gen" id="gen-note">Loading…</div>
   </div>
-  <input type="text" id="search" placeholder="Search title or author…" autocomplete="off">
+  <input type="text" id="search" placeholder="Search title, author or ISBN…" autocomplete="off">
 </div>
 <div class="season-nav" id="season-nav"><span class="label">Browse</span></div>
 <main id="root"><div class="loading">Loading catalog…</div></main>
@@ -1019,7 +1019,27 @@ window.addEventListener('resize', () => { syncToolbarHeight(); updateDateScrubbe
 function applySearch() {
   const q = document.getElementById('search').value.trim().toLowerCase();
   if (!q) { render(allTitles); return; }
-  render(allTitles.filter(t => ((t.title||'')+' '+(t.author||'')).toLowerCase().includes(q)));
+  // An ISBN query is digits (plus an optional trailing X) once hyphens/spaces
+  // are dropped, so "978-1-23456-789-7" matches however the ISBN is stored.
+  // Partial ISBNs (4+ digits) match too; a 10-digit ISBN-10 is converted to its
+  // ISBN-13 form since only 13s are stored.
+  let isbnQ = /^[\d\s-]+[\dx]?$/i.test(q) ? q.replace(/[\s-]/g, '') : '';
+  if (isbnQ.length < 4) isbnQ = '';
+  const isbn13Q = isbn10to13(isbnQ);
+  render(allTitles.filter(t => {
+    if (((t.title||'')+' '+(t.author||'')).toLowerCase().includes(q)) return true;
+    if (!isbnQ) return false;
+    const isbns = [t.isbn13, ...(Array.isArray(t.editions) ? t.editions.map(e => e?.isbn13) : [])]
+      .filter(Boolean).map(i => String(i).replace(/[\s-]/g, ''));
+    return isbns.some(i => i.includes(isbnQ) || (isbn13Q && i === isbn13Q));
+  }));
+}
+
+function isbn10to13(s) {
+  if (!/^\d{9}[\dx]$/i.test(s)) return '';
+  const body = '978' + s.slice(0, 9);
+  const sum = [...body].reduce((a, d, i) => a + (+d) * (i % 2 ? 3 : 1), 0);
+  return body + ((10 - sum % 10) % 10);
 }
 
 document.getElementById('search').addEventListener('input', applySearch);
