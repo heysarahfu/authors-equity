@@ -600,15 +600,17 @@ function storiesSectionHtml(titles) {
   const featured = titles.filter(t => (seasonOf(t.pubDate) || {}).key === soonestKey);
   const seasonLabel = seasonFromKey(soonestKey).label;
 
-  // The season right after the featured one gets its own "Coming Soon"
-  // sub-heading inside the compact grid, rather than blending anonymously
-  // into the rest of the backlist/future titles below it.
-  const comingSoonKey = soonestKey + 1;
-  const comingSoon = titles.filter(t => (seasonOf(t.pubDate) || {}).key === comingSoonKey);
-  const comingSoonLabel = seasonFromKey(comingSoonKey).label;
-
-  const handledIds = new Set([...featured, ...comingSoon].map(t => t.id));
-  const rest = titles.filter(t => !handledIds.has(t.id)).sort(byPubDate);
+  // Everything upcoming beyond the featured season goes under "Coming Soon"
+  // (however many seasons out the imprint has announced), and everything
+  // already published under "Available Now" — rather than one unlabeled grid.
+  const featuredIds = new Set(featured.map(t => t.id));
+  const isUpcoming = t => t.pubDate && new Date(t.pubDate + 'T00:00:00') >= now;
+  const comingSoon = titles.filter(t => !featuredIds.has(t.id) && isUpcoming(t)).sort(byPubDate);
+  const available = titles.filter(t => !featuredIds.has(t.id) && !isUpcoming(t)).sort(byPubDate);
+  const comingSoonSeasons = [...new Set(comingSoon.map(t => (seasonOf(t.pubDate) || {}).label).filter(Boolean))];
+  const comingSoonNote = comingSoonSeasons.length > 1
+    ? `${comingSoonSeasons[0]} &ndash; ${comingSoonSeasons[comingSoonSeasons.length - 1]}`
+    : esc(comingSoonSeasons[0] || '');
 
   // Every 831 Stories title ships to the same spec (trim size, price,
   // paperback-only format), so rather than pick one of several current-
@@ -622,10 +624,13 @@ function storiesSectionHtml(titles) {
     <div class="section-sub">${featured.length} new for ${esc(seasonLabel)} &middot; ${titles.length} titles total</div>
     <div class="info-row">${infoTableHtml(specBook, { hideOnSale: true })}<div class="grid grid-featured">${featured.slice().sort(byPubDate).map(t => gridItemHtml(t, { badge: seasonLabel })).join('')}</div></div>`;
   if (comingSoon.length) {
-    html += `<div class="subgroup-title">Coming Soon<span class="sg-note">${esc(comingSoonLabel)}</span></div>`;
-    html += `<div class="grid grid-compact">${comingSoon.slice().sort(byPubDate).map(t => gridItemHtml(t)).join('')}</div>`;
+    html += `<div class="subgroup-title">Coming Soon<span class="sg-note">${comingSoonNote}${comingSoonNote ? ' &middot; ' : ''}${comingSoon.length} title${comingSoon.length === 1 ? '' : 's'}</span></div>`;
+    html += `<div class="grid grid-compact">${comingSoon.map(t => gridItemHtml(t)).join('')}</div>`;
   }
-  if (rest.length) html += `<div class="grid grid-compact">${rest.map(t => gridItemHtml(t)).join('')}</div>`;
+  if (available.length) {
+    html += `<div class="subgroup-title">Available Now<span class="sg-note">${available.length} title${available.length === 1 ? '' : 's'}</span></div>`;
+    html += `<div class="grid grid-compact">${available.map(t => gridItemHtml(t)).join('')}</div>`;
+  }
   return html;
 }
 
