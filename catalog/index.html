@@ -702,9 +702,12 @@ function mergeSiblingRecords(titles) {
     if (m[2] === 'signed-edition') { drop.add(t.id); return; }
     // A paperback that lands in a DIFFERENT season than its hardcover is a
     // launch of its own: keep it as its own card in its own season, labeled
-    // "Paperback". Same season (or no date to compare) folds into one entry.
+    // "Paperback". Same season (or no date to compare) folds into one entry —
+    // and so does a paperback whose season has already passed: once it's
+    // backlist it's just another edition of the book (like Next To Heaven's),
+    // not a separate card.
     const sb = seasonOf(base.pubDate), st = seasonOf(t.pubDate);
-    if (sb && st && sb.key !== st.key) {
+    if (sb && st && sb.key !== st.key && st.key >= currentSeason.key) {
       t.variantLabel = 'Paperback';
       BORROW.forEach(f => {
         const v = t[f];
