@@ -64,7 +64,7 @@ main{max-width:1080px;margin:0 auto;padding:0 32px 100px;}
 .subgroup-title{font-size:14px;font-weight:700;color:var(--ink);margin:26px 0 12px;display:flex;align-items:baseline;gap:8px;}
 .subgroup-title .sg-note{font-size:11.5px;font-weight:400;color:var(--ink-3);}
 
-/* ── One-per-page frontlist spread (current + next season only) ──
+/* ── One-per-page frontlist spread (current + next two seasons only) ──
    The cover FLOATS left rather than sitting in a flex row with the title —
    that way the byline/title/subtitle and the photo+info-table row that
    follows all start right where the previous one ends, regardless of the
@@ -653,7 +653,7 @@ function lyxSectionHtml(titles) {
 }
 
 // Shared by Backlist (strictly already-published) and Looking Ahead
-// (announced for a season beyond the current+next window) — same
+// (announced for a season beyond the three-season frontlist window) — same
 // browse-by-theme carousel treatment, different heading and id prefix so
 // each title only ever needs true-or-false pub-date logic once, in render().
 function themeCarouselSectionHtml(sectionId, idPrefix, heading, sub, titles, titlesById) {
@@ -725,7 +725,7 @@ function displayTitle(t) {
 }
 
 let allTitles = [];
-let currentSeason, nextSeason;
+let currentSeason, nextSeason, thirdSeason;
 // Titles behind each collapsed "Full title records" block, and which block
 // owns which title anchor — rebuilt on every render().
 let recordBlocks = {};
@@ -749,22 +749,24 @@ function render(rawTitles) {
 
   const current = mainTitles.filter(t => (seasonOf(t.pubDate) || {}).key === currentSeason.key);
   const next = mainTitles.filter(t => (seasonOf(t.pubDate) || {}).key === nextSeason.key);
-  const handled = new Set([...current, ...next].map(t => t.id));
+  const third = mainTitles.filter(t => (seasonOf(t.pubDate) || {}).key === thirdSeason.key);
+  const handled = new Set([...current, ...next, ...third].map(t => t.id));
   const leftover = mainTitles.filter(t => !handled.has(t.id));
   // "Backlist" means already published — a title whose date got pushed out
-  // past the current+next window (e.g. re-scheduled after this catalog last
+  // past the three-season window (e.g. re-scheduled after this catalog last
   // categorized it) is still upcoming, not backlist, even though it isn't
-  // in the current+next spreads either. Give those their own section rather
+  // in the frontlist spreads either. Give those their own section rather
   // than mislabel them "previously published."
   const today = new Date();
   const isFuture = t => t.pubDate && new Date(t.pubDate + 'T00:00:00') >= today;
   const backlist = leftover.filter(t => !isFuture(t));
   const future = leftover.filter(isFuture);
 
-  document.getElementById('season-range').textContent = `${currentSeason.label} – ${nextSeason.label}`;
+  document.getElementById('season-range').textContent = `${currentSeason.label} – ${thirdSeason.label}`;
 
   let html = seasonSectionHtml('sec-current', currentSeason.label, 'New & current this season', current);
   html += seasonSectionHtml('sec-next', nextSeason.label, 'Coming next season', next);
+  html += seasonSectionHtml('sec-third', thirdSeason.label, 'Coming soon', third);
   html += storiesSectionHtml(storiesTitles);
   html += lyxSectionHtml(lyxTitles);
   const titlesById = {};
@@ -779,6 +781,7 @@ function render(rawTitles) {
   const navPills = [];
   if (current.length) navPills.push({ id: 'sec-current', label: currentSeason.label });
   if (next.length) navPills.push({ id: 'sec-next', label: nextSeason.label });
+  if (third.length) navPills.push({ id: 'sec-third', label: thirdSeason.label });
   if (storiesTitles.length) navPills.push({ id: 'sec-831', label: '831 Stories' });
   if (lyxTitles.length) navPills.push({ id: 'sec-lyx', label: 'LYX' });
   if (backlist.length) navPills.push({ id: 'sec-backlist', label: 'Backlist' });
@@ -1114,6 +1117,7 @@ async function load() {
     const today = seasonOf(new Date().toISOString().slice(0, 10));
     currentSeason = today;
     nextSeason = seasonFromKey(today.key + 1);
+    thirdSeason = seasonFromKey(today.key + 2);
     document.getElementById('gen-note').textContent = data.generatedAt
       ? `${allTitles.length} titles · updated ${new Date(data.generatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
       : `${allTitles.length} titles`;
