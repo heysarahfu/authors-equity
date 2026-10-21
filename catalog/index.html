@@ -759,18 +759,24 @@ function render(rawTitles) {
   const isFuture = t => t.pubDate && new Date(t.pubDate + 'T00:00:00') >= today;
   const backlist = leftover.filter(t => !isFuture(t));
   const future = leftover.filter(isFuture);
+  // Titles already out this season don't lead the catalog (it should open on
+  // what's coming) — they move to a "Recently Published" section, laid out
+  // like the Backlist, until the season turns over and they join it.
+  const recent = current.filter(t => !isFuture(t));
+  const currentUpcoming = current.filter(isFuture);
 
   document.getElementById('season-range').textContent = `${currentSeason.label} – ${thirdSeason.label}`;
 
-  let html = seasonSectionHtml('sec-current', currentSeason.label, 'New & current this season', current);
+  let html = seasonSectionHtml('sec-current', currentSeason.label, recent.length ? 'Still to come this season' : 'New & current this season', currentUpcoming);
   html += seasonSectionHtml('sec-next', nextSeason.label, 'Coming next season', next);
   html += seasonSectionHtml('sec-third', thirdSeason.label, 'Coming soon', third);
   // The date scrubber only runs over these three seasons (see updateDateScrubber).
   html = `<div id="frontlist">${html}</div>`;
-  html += storiesSectionHtml(storiesTitles);
-  html += lyxSectionHtml(lyxTitles);
   const titlesById = {};
   allTitles.forEach(t => { titlesById[t.id] = t; });
+  html += themeCarouselSectionHtml('sec-recent', 'rp', 'Recently Published', `Out now from ${esc(currentSeason.label)} &mdash; browse by category`, recent, titlesById);
+  html += storiesSectionHtml(storiesTitles);
+  html += lyxSectionHtml(lyxTitles);
   html += themeCarouselSectionHtml('sec-backlist', 'bl', 'Backlist', 'Previously published &mdash; browse by category', backlist, titlesById);
   html += themeCarouselSectionHtml('sec-future', 'fu', 'Looking Ahead', 'Announced for later seasons &mdash; browse by category', future, titlesById);
 
@@ -779,9 +785,10 @@ function render(rawTitles) {
   // Season-nav pills only ever need building once (on the unfiltered load),
   // but harmless to rebuild — cheap and keeps it in sync if data changes.
   const navPills = [];
-  if (current.length) navPills.push({ id: 'sec-current', label: currentSeason.label });
+  if (currentUpcoming.length) navPills.push({ id: 'sec-current', label: currentSeason.label });
   if (next.length) navPills.push({ id: 'sec-next', label: nextSeason.label });
   if (third.length) navPills.push({ id: 'sec-third', label: thirdSeason.label });
+  if (recent.length) navPills.push({ id: 'sec-recent', label: 'Recently Published' });
   if (storiesTitles.length) navPills.push({ id: 'sec-831', label: '831 Stories' });
   if (lyxTitles.length) navPills.push({ id: 'sec-lyx', label: 'LYX' });
   if (backlist.length) navPills.push({ id: 'sec-backlist', label: 'Backlist' });
