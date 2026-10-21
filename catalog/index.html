@@ -163,11 +163,12 @@ a.carousel-item:hover .ci-title{text-decoration:underline;}
 .carousel-btn.prev{left:-14px;}
 .carousel-btn.next{right:-14px;}
 
-/* ── 831 featured (newest season) vs rest ── */
-.grid.grid-featured{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:22px;margin-bottom:28px;}
-.grid-featured .gi-title{font-size:14px;}
-.grid-featured .gi-author{font-size:12px;}
-.grid-featured .gi-badge{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--yellow);background:var(--ink);border-radius:10px;padding:2px 8px;margin-top:4px;}
+/* ── 831 Stories: one uniform card size, grouped by season ── */
+.grid.grid-stories{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:18px;margin-bottom:24px;}
+.grid-stories .gi-title{font-size:12.5px;}
+.grid-stories .gi-author{font-size:11.5px;}
+.grid-stories .gi-meta{font-size:10.5px;}
+.grid-stories .gi-meta>div:first-child{font-weight:700;color:var(--ink-2);}
 
 /* ── Per-title anchor links — lets anyone send a URL straight to one book.
    A <button>, not an <a>, because a LYX carousel card is sometimes itself
@@ -190,6 +191,7 @@ a.carousel-item:hover .ci-title{text-decoration:underline;}
    (see media query below). Hidden by default so it never affects desktop,
    where the season-nav's own horizontal pill bar is the only way to browse. */
 .date-scrubber{display:none;}
+.date-scrubber.off{display:none!important;}
 .footer{max-width:1080px;margin:0 auto;padding:30px 32px 60px;border-top:1px solid var(--rule);font-size:11.5px;color:var(--ink-3);text-align:center;}
 .footer a{color:inherit;text-decoration:underline;}
 
@@ -202,10 +204,7 @@ a.carousel-item:hover .ci-title{text-decoration:underline;}
   main{padding:28px 16px 80px;}
   .toolbar .gen{display:none;}
 
-  /* The 831 Stories "featured" cards (new for the current season) need a
-     200px-minimum column on desktop, which only ever fits one across on a
-     phone — force 2 columns instead of leaving them stacked single-file. */
-  .grid.grid-featured{grid-template-columns:repeat(2,1fr);gap:14px;}
+  .grid.grid-stories{grid-template-columns:repeat(3,1fr);gap:12px;}
 
   .season-nav{padding:8px 16px;}
 
@@ -594,23 +593,14 @@ function seasonSectionHtml(sectionId, heading, sub, titles) {
 function storiesSectionHtml(titles) {
   if (!titles.length) return '';
   const now = new Date();
-  const future = titles.filter(t => t.pubDate && new Date(t.pubDate + 'T00:00:00') >= now);
-  const pool = future.length ? future : titles;
-  const soonestKey = Math.min(...pool.map(t => (seasonOf(t.pubDate) || { key: Infinity }).key));
-  const featured = titles.filter(t => (seasonOf(t.pubDate) || {}).key === soonestKey);
-  const seasonLabel = seasonFromKey(soonestKey).label;
-
-  // Everything upcoming beyond the featured season goes under "Coming Soon"
-  // (however many seasons out the imprint has announced), and everything
-  // already published under "Available Now" — rather than one unlabeled grid.
-  const featuredIds = new Set(featured.map(t => t.id));
   const isUpcoming = t => t.pubDate && new Date(t.pubDate + 'T00:00:00') >= now;
-  const comingSoon = titles.filter(t => !featuredIds.has(t.id) && isUpcoming(t)).sort(byPubDate);
-  const available = titles.filter(t => !featuredIds.has(t.id) && !isUpcoming(t)).sort(byPubDate);
-  const comingSoonSeasons = [...new Set(comingSoon.map(t => (seasonOf(t.pubDate) || {}).label).filter(Boolean))];
-  const comingSoonNote = comingSoonSeasons.length > 1
-    ? `${comingSoonSeasons[0]} &ndash; ${comingSoonSeasons[comingSoonSeasons.length - 1]}`
-    : esc(comingSoonSeasons[0] || '');
+
+  // Every title is the same size; what changes is the heading it sits under.
+  // Upcoming titles are grouped by season (soonest first), everything already
+  // published goes under "Available Now" — and each card carries its own date.
+  const upcoming = titles.filter(isUpcoming).sort(byPubDate);
+  const available = titles.filter(t => !isUpcoming(t)).sort(byPubDate);
+  const bySeason = groupBy(upcoming, t => (seasonOf(t.pubDate) || {}).label);
 
   // Every 831 Stories title ships to the same spec (trim size, price,
   // paperback-only format), so rather than pick one of several current-
@@ -621,15 +611,15 @@ function storiesSectionHtml(titles) {
   const specBook = titles.find(t => t.title === 'Big Fan') || sortedByDate[sortedByDate.length - 1];
 
   let html = `<div id="sec-831" class="section-title imprint-title"><a class="imprint-logo-link i831" href="https://831stories.com" target="_blank" rel="noopener" aria-label="831 Stories — visit 831stories.com"><img src="/assets/images/imprints/831-logo.png" alt="831 Stories"></a></div>
-    <div class="section-sub">${featured.length} new for ${esc(seasonLabel)} &middot; ${titles.length} titles total</div>
-    <div class="info-row">${infoTableHtml(specBook, { hideOnSale: true })}<div class="grid grid-featured">${featured.slice().sort(byPubDate).map(t => gridItemHtml(t, { badge: seasonLabel })).join('')}</div></div>`;
-  if (comingSoon.length) {
-    html += `<div class="subgroup-title">Coming Soon<span class="sg-note">${comingSoonNote}${comingSoonNote ? ' &middot; ' : ''}${comingSoon.length} title${comingSoon.length === 1 ? '' : 's'}</span></div>`;
-    html += `<div class="grid grid-compact">${comingSoon.map(t => gridItemHtml(t)).join('')}</div>`;
-  }
+    <div class="section-sub">${titles.length} titles &middot; ${upcoming.length} upcoming</div>
+    <div class="info-row">${infoTableHtml(specBook, { hideOnSale: true })}</div>`;
+  bySeason.forEach((items, seasonLabel) => {
+    html += `<div class="subgroup-title">${esc(seasonLabel)}<span class="sg-note">Coming Soon &middot; ${items.length} title${items.length === 1 ? '' : 's'}</span></div>`;
+    html += `<div class="grid grid-stories">${items.map(t => gridItemHtml(t)).join('')}</div>`;
+  });
   if (available.length) {
     html += `<div class="subgroup-title">Available Now<span class="sg-note">${available.length} title${available.length === 1 ? '' : 's'}</span></div>`;
-    html += `<div class="grid grid-compact">${available.map(t => gridItemHtml(t)).join('')}</div>`;
+    html += `<div class="grid grid-stories">${available.map(t => gridItemHtml(t)).join('')}</div>`;
   }
   return html;
 }
@@ -775,6 +765,8 @@ function render(rawTitles) {
   let html = seasonSectionHtml('sec-current', currentSeason.label, 'New & current this season', current);
   html += seasonSectionHtml('sec-next', nextSeason.label, 'Coming next season', next);
   html += seasonSectionHtml('sec-third', thirdSeason.label, 'Coming soon', third);
+  // The date scrubber only runs over these three seasons (see updateDateScrubber).
+  html = `<div id="frontlist">${html}</div>`;
   html += storiesSectionHtml(storiesTitles);
   html += lyxSectionHtml(lyxTitles);
   const titlesById = {};
@@ -842,7 +834,9 @@ function goToAnchor(id, push) {
   if (push && location.hash.slice(1) !== id) history.pushState(null, '', '#' + id);
   el.scrollIntoView({ block: 'start' });
   flashAnchorTarget();
-  const imgs = [...el.parentElement.querySelectorAll('img')].filter(i => !i.complete);
+  // Only images above or inside the target can push it around as they load.
+  const imgs = [...el.parentElement.querySelectorAll('img')].filter(i => !i.complete &&
+    (el.contains(i) || (el.compareDocumentPosition(i) & Node.DOCUMENT_POSITION_PRECEDING)));
   if (imgs.length) {
     Promise.race([
       Promise.all(imgs.map(i => new Promise(r => { i.addEventListener('load', r, { once: true }); i.addEventListener('error', r, { once: true }); }))),
@@ -872,8 +866,9 @@ function setupScrollSpy() {
   sections.forEach(s => scrollSpyObserver.observe(s));
 }
 
-// The right-edge date scrubber: a dot that tracks overall scroll position
-// (0 at the top of the page, 1 at the bottom) plus a label showing the
+// The right-edge date scrubber: a dot that tracks scroll position through the
+// three frontlist seasons only (0 at the top of the first, 1 at the bottom of
+// the last — hidden everywhere else, where dates aren't in order) plus a label showing the
 // pubDate of whichever dated card is currently nearest the top of the
 // viewport — and a drag handle on the dot to jump straight to a point in
 // the catalog instead of thumb-scrolling past 100+ titles.
@@ -882,18 +877,34 @@ function formatMonthYear(iso) {
   const d = new Date(iso + 'T00:00:00');
   return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
+// Scroll positions (px) spanning the frontlist block: from its top sitting
+// just under the sticky bars to its bottom at the bottom of the viewport.
+function frontlistScrollRange() {
+  const el = document.getElementById('frontlist');
+  if (!el || !el.getClientRects().length) return null;
+  const r = el.getBoundingClientRect();
+  const stickyH = (document.querySelector('.toolbar')?.getBoundingClientRect().height || 0) + (document.querySelector('.season-nav')?.getBoundingClientRect().height || 0);
+  const start = Math.max(0, r.top + window.scrollY - stickyH);
+  const end = Math.max(start + 1, r.bottom + window.scrollY - window.innerHeight);
+  return { el, start, end };
+}
 function updateDateScrubber() {
   const scrubber = document.getElementById('date-scrubber');
   const thumb = document.getElementById('ds-thumb');
   const label = document.getElementById('ds-label');
   if (!scrubber || !thumb || !label) return;
 
+  const refY = (document.querySelector('.toolbar')?.getBoundingClientRect().bottom || 0) + 40;
+  const range = frontlistScrollRange();
+  const rect = range && range.el.getBoundingClientRect();
+  const active = !!rect && rect.top <= window.innerHeight * 0.5 && rect.bottom > refY;
+  scrubber.classList.toggle('off', !active);
+  if (!active) return;
+
   const trackHeight = scrubber.getBoundingClientRect().height;
-  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-  const fraction = scrollable > 0 ? Math.min(1, Math.max(0, window.scrollY / scrollable)) : 0;
+  const fraction = Math.min(1, Math.max(0, (window.scrollY - range.start) / (range.end - range.start)));
   thumb.style.top = Math.round(fraction * trackHeight) + 'px';
 
-  const refY = (document.querySelector('.toolbar')?.getBoundingClientRect().bottom || 0) + 40;
   // Skip anything inside a collapsed records block (no layout box).
   const dated = [...document.querySelectorAll('[data-pubdate]')].filter(el => el.dataset.pubdate && el.getClientRects().length);
   let current = dated[0];
@@ -911,9 +922,10 @@ function setupDateScrubberDrag() {
   let dragging = false;
   const scrubTo = (clientY) => {
     const rect = scrubber.getBoundingClientRect();
+    const range = frontlistScrollRange();
+    if (!range) return;
     const fraction = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
-    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-    window.scrollTo(0, fraction * scrollable);
+    window.scrollTo(0, range.start + fraction * (range.end - range.start));
     updateDateScrubber();
   };
   thumb.addEventListener('pointerdown', (e) => {
@@ -1136,11 +1148,10 @@ async function load() {
     // never finds the target — do it ourselves once the DOM is actually there.
     if (location.hash) {
       const hashId = decodeURIComponent(location.hash.slice(1));
-      if (recordOwner[hashId]) goToAnchor(hashId, false);
-      else {
-        const target = document.getElementById(hashId);
-        if (target) { target.scrollIntoView({ block: 'center', inline: 'center' }); flashAnchorTarget(); }
-      }
+      // Always align the top of the title (its cover) with the top of the
+      // viewport — centering a tall record put the info table on screen
+      // instead of the cover, especially on a phone.
+      goToAnchor(hashId, false);
     }
   } catch (err) {
     document.getElementById('root').innerHTML = `<div class="error">Couldn't load the catalog: ${esc(err.message || err)}</div>`;
